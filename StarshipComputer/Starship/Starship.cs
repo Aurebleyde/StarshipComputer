@@ -420,12 +420,8 @@ namespace StarshipComputer
             HingeDown1.SetFieldFloat("Target Angle", 0);
             HingeDown2.SetFieldFloat("Target Angle", 0);
 
-            starship.Control.SAS = false;
-            starship.AutoPilot.Disengage();
-            Thread.Sleep(500);
-            starship.Control.SAS = true;
-            Thread.Sleep(2000);
-            starship.Control.SASMode = SASMode.Retrograde;
+            starship.AutoPilot.Engage();
+            starship.AutoPilot.TargetDirection = starship.Flight(starship.SurfaceReferenceFrame).Retrograde;
 
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 20) { }
 
@@ -441,64 +437,11 @@ namespace StarshipComputer
             starship.AutoPilot.Engage();
             starship.AutoPilot.TargetPitch = 90;
 
+            starship.AutoPilot.TargetPitchAndHeading(90, 0);
+
             Console.WriteLine("Wings full opened");
             HingeDown1.SetFieldFloat("Target Angle", 90);
             HingeDown2.SetFieldFloat("Target Angle", 90);
-        }
-
-        public static void Landing()
-        {
-            starship.Control.Throttle = 0;
-            bool SuicideBurnText = false;
-            float throt = ThrottleToTWR(0.0f);
-            bool SuicideBurn = false;
-
-            double landedAltitude = 20;
-
-            while (starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude > 8000) { Thread.Sleep(500); }
-
-            while(true)
-            {
-                if (SuicideBurnText == false) { throt = ThrottleToTWR(0.0f); }
-
-                double Speed = starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed;
-                if (Speed > 110)
-                    Speed = 110;
-
-                double trueRadar = starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
-                double g = starship.Orbit.Body.SurfaceGravity;
-                double maxDecelThree = ((Engines.RaptorSL[0].AvailableThrust * Engines.RaptorSL.Count) / starship.Mass) - g;
-                double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree);
-                double impactTime = trueRadar / Speed;
-
-                if (trueRadar - (Speed * 1.0f) <= stopDistThree && SuicideBurnText == false)
-                {
-                    Console.WriteLine("Landing Burn startup");
-                    SuicideBurnText = true;
-
-                    throt = 1;
-                }
-
-                if (SuicideBurnText)
-                    throt = (float)(stopDistThree / trueRadar);
-
-                if (trueRadar < 200 && Speed < 5)
-                    throt = ThrottleToTWR(0.90f);
-
-                if (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > -0.1 && SuicideBurn == false)
-                {
-                    starship.Control.Throttle = 0;
-                    throt = 0;
-                    Console.WriteLine("Landing burn shutdown");
-
-                    break;
-                }
-
-                if (throt <= 0.001f && SuicideBurnText == true)
-                    throt = 0.001f;
-
-                starship.Control.Throttle = throt;
-            }
         }
 
         public static bool DesentControl()
@@ -508,17 +451,9 @@ namespace StarshipComputer
             WingsControl.Start();
 
             Console.WriteLine("Landing control started");
-            Landing();
+            Landing.LandingBurn(starship);
 
             return true;
-        }
-
-        public static float ThrottleToTWR(float twr)
-        {
-            float Mass = starship.Mass * starship.Orbit.Body.SurfaceGravity;
-            float T = twr * Mass;
-            float Throttle = (T - (330770 * Engines.RaptorSL.Count)) / (starship.AvailableThrust - (330770 * Engines.RaptorSL.Count));
-            return Throttle;
         }
     }
 }

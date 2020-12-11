@@ -36,7 +36,7 @@ namespace StarshipComputer
             Console.WriteLine("Starship Computer in startup");
 
             Console.WriteLine("Connection...");
-            Connections Connections = new Connections(ConnectionList.data, MainThread);
+            Connections Connections = new Connections(ConnectionList.ethernet, MainThread);
 
             Console.WriteLine("Connection to Starship and setup of Starship...");
             starship = new Starship(Connections.Connection, numberPrototype);

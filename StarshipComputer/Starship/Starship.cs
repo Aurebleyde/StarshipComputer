@@ -412,6 +412,8 @@ namespace StarshipComputer
 
             while (starship.Thrust < 1000000)
             {
+                Console.WriteLine(PrevDistance);
+
                 CenterLift = starship.Flight(starship.SurfaceReferenceFrame).LiftCoefficient;
 
                 float CenterDiff = (float)(CenterLift - CenterMass.Item2);
@@ -426,35 +428,35 @@ namespace StarshipComputer
                 float pitch = ((CenterDiff + 1) * 90) / 2;
 
                 float pitchUp = -pitch + 90 - 20;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -25)
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -15)
                 {
                     pitchUp = pitchUp + 45;
                 }
-                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 25)
+                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 15)
                 {
                     pitchUp = pitchUp - 10;
                 }
                 else if (Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) < Distance(starship.Flight(starship.SurfaceReferenceFrame).Latitude, InitPos.Item1, starship.Flight(starship.SurfaceReferenceFrame).Longitude, InitPos.Item2) || Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) > PrevDistance)
                 {
-                    pitchUp = (float)(10);
+                    pitchUp = (float)(0);
                 }
                 else
                 {
-                    pitchUp = (float)(50 + ((double)(angvel_corrected.Item1) * 100));
+                    pitchUp = (float)(52 + ((double)(angvel_corrected.Item1) * 100));
                 }
 
                 float pitchDown = pitch + 40;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -25)
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -15)
                 {
                     pitchDown = pitchDown - 65;
                 }
-                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 25)
+                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 15)
                 {
                     pitchDown = pitchDown + 52;
                 }
                 else
                 {
-                    pitchDown = (float)(50 - ((double)(angvel_corrected.Item1) * 100));
+                    pitchDown = (float)(47 - ((double)(angvel_corrected.Item1) * 100));
                 }
 
                 PrevDistance = Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2);

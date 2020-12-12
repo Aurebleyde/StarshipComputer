@@ -26,8 +26,8 @@ namespace StarshipComputer
                 if (SuicideBurnText == false) { throt = Throttle.ThrottleToTWR(vessel, 0.0f); }
 
                 double Speed = vessel.Flight(vessel.SurfaceReferenceFrame).TrueAirSpeed;
-                if (Speed > 100)
-                    Speed = 100;
+                if (Speed > 110)
+                    Speed = 110;
 
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;
@@ -35,7 +35,7 @@ namespace StarshipComputer
                 double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree);
                 double impactTime = trueRadar / Speed;
 
-                if (trueRadar - (Speed * 0.65f) <= stopDistThree && SuicideBurnText == false)
+                if (trueRadar - (Speed * 1.0f) <= stopDistThree && SuicideBurnText == false)
                 {
                     Console.WriteLine("Landing Burn startup");
                     SuicideBurnText = true;

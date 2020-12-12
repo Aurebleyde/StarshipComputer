@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using KRPC.Client.Services.Trajectories;
 
 namespace StarshipComputer
 {
@@ -351,9 +352,47 @@ namespace StarshipComputer
             return true;
         }
 
+        public static bool TakeCoords()
+        {
+            InitPos = new Tuple<double, double>(starship.Flight(starship.SurfaceReferenceFrame).Latitude, starship.Flight(starship.SurfaceReferenceFrame).Longitude);
+
+            return true;
+        }
+
+        public static Tuple<double, double> InitPos;
 
         public static Tuple<double, double, double> CenterMass;
         public static float CenterLift;
+
+        public static Tuple<double, double> ImpactPoint()
+        {
+            return new Tuple<double, double>(starship.connection.Trajectories().ImpactPos().Item1, starship.connection.Trajectories().ImpactPos().Item1);
+        }
+
+        public static double Distance(double lat1, double lat2, double lon1, double lon2/*, double el1, double el2*/) //Lat1 & 2 and Lon1 & 2 = Pose Initial and Final. Eli1 & 2 = Altitude Init and Final.
+        {
+
+            int R = 6371; // Radius of the earth
+
+            double latDistance = ToRadians(lat2 - lat1);
+            double lonDistance = ToRadians(lon2 - lon1);
+            double a = Math.Sin(latDistance / 2) * Math.Sin(latDistance / 2)
+                    + Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2))
+                    * Math.Sin(lonDistance / 2) * Math.Sin(lonDistance / 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            double distance = R * c * 1000; // convert to meters
+
+            /*double height = el1 - el2;*/
+
+            distance = Math.Pow(distance, 2)/* + Math.Pow(height, 2)*/;
+
+            return Math.Sqrt(distance);
+        }
+
+        public static double ToRadians(double val)
+        {
+            return (Math.PI / 180) * val;
+        }
 
         public static void WingControl()
         {
@@ -368,6 +407,8 @@ namespace StarshipComputer
             Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
 
             CenterMass = starship.Flight(starship.SurfaceReferenceFrame).CenterOfMass;
+
+            double PrevDistance = 0;
 
             while (starship.Thrust < 1000000)
             {
@@ -385,33 +426,40 @@ namespace StarshipComputer
                 float pitch = ((CenterDiff + 1) * 90) / 2;
 
                 float pitchUp = -pitch + 90 - 20;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -10)
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -25)
                 {
                     pitchUp = pitchUp + 45;
                 }
-                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 10)
+                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 25)
                 {
-                    pitchUp = pitchUp - 15;
+                    pitchUp = pitchUp - 10;
+                }
+                else if (Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) < Distance(starship.Flight(starship.SurfaceReferenceFrame).Latitude, InitPos.Item1, starship.Flight(starship.SurfaceReferenceFrame).Longitude, InitPos.Item2) || Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) > PrevDistance)
+                {
+                    pitchUp = (float)(10);
                 }
                 else
                 {
-                    pitchUp = (float)(45 + ((double)(angvel_corrected.Item1) * 100));
+                    pitchUp = (float)(50 + ((double)(angvel_corrected.Item1) * 100));
                 }
 
                 float pitchDown = pitch + 40;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -10)
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -25)
                 {
                     pitchDown = pitchDown - 65;
                 }
-                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 10)
+                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 25)
                 {
-                    pitchDown = pitchDown + 50;
+                    pitchDown = pitchDown + 52;
                 }
                 else
                 {
-                    pitchDown = (float)(45 - ((double)(angvel_corrected.Item1) * 100));
+                    pitchDown = (float)(50 - ((double)(angvel_corrected.Item1) * 100));
                 }
-                
+
+                PrevDistance = Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2);
+
+
                 Console.WriteLine("AngularVelocity : " + angvel_corrected);
 
                 Console.WriteLine(pitch);
@@ -432,6 +480,10 @@ namespace StarshipComputer
             starship.AutoPilot.ReferenceFrame = starship.SurfaceVelocityReferenceFrame;
             starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(0, -3.14f, 0);
             Console.WriteLine(starship.AutoPilot.TargetDirection);
+
+            starship.Control.Pitch = 1;
+            while (starship.AutoPilot.PitchError > 35 || starship.AutoPilot.HeadingError > 180) { }
+            starship.Control.Pitch = 0;
 
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 20) { }
 

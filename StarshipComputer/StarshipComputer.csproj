@@ -66,6 +66,13 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="TrajectoriesBootstrap">
+      <HintPath>C:\Users\Aureb\KSP\Kerbal Space Program\GameData\Trajectories\Plugin\TrajectoriesBootstrap.dll</HintPath>
+    </Reference>
+    <Reference Include="TrajectorieskRPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\TrajectorieskRPC.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Command.cs" />
@@ -89,6 +96,7 @@
     <Compile Include="Starship\Wing.cs" />
     <Compile Include="Tools\Landing.cs" />
     <Compile Include="Tools\ThrottleToTWR.cs" />
+    <Compile Include="Tools\Trajectories.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

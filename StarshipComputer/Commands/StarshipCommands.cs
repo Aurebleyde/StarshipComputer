@@ -129,5 +129,18 @@ namespace StarshipComputer
                 return false;
             }
         }
+
+        [RegisterCommand("takeCoords", "Tale Starship's coordonees", "use /takeCoords")]
+        public static bool TakeCoords(params string[] args)
+        {
+            if (Starship.TakeCoords())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }

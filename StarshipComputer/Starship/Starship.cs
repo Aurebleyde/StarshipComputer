@@ -378,32 +378,40 @@ namespace StarshipComputer
 
                 //float pitch = starship.Flight(starship.SurfaceReferenceFrame).Pitch;
 
-                float pitch = ((CenterDiff + 1) * 90) / 2;
-
-                float pitchUp = -pitch + 90 - 20;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -5)
-                {
-                    pitchUp = pitchUp + 15;
-                }
-                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 5)
-                {
-                    pitchUp = pitchUp - 50;
-                }
-
-                float pitchDown = pitch + 40;
-                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -5)
-                {
-                    pitchDown = pitchDown - 15;
-                }
-                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 5)
-                {
-                    pitchDown = pitchDown + 50;
-                }
-
-
                 ReferenceFrame body_ref_frame = starship.Orbit.Body.NonRotatingReferenceFrame;
                 Tuple<double, double, double> angvel = starship.AngularVelocity(body_ref_frame);
                 Tuple<double, double, double> angvel_corrected = starship.connection.SpaceCenter().TransformDirection(angvel, body_ref_frame, starship.ReferenceFrame);
+
+                float pitch = ((CenterDiff + 1) * 90) / 2;
+
+                float pitchUp = -pitch + 90 - 20;
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -10)
+                {
+                    pitchUp = pitchUp + 45;
+                }
+                else if(starship.Flight(starship.SurfaceReferenceFrame).Pitch > 10)
+                {
+                    pitchUp = pitchUp - 15;
+                }
+                else
+                {
+                    pitchUp = (float)(45 + ((double)(angvel_corrected.Item1) * 100));
+                }
+
+                float pitchDown = pitch + 40;
+                if (starship.Flight(starship.SurfaceReferenceFrame).Pitch < -10)
+                {
+                    pitchDown = pitchDown - 65;
+                }
+                else if (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 10)
+                {
+                    pitchDown = pitchDown + 50;
+                }
+                else
+                {
+                    pitchDown = (float)(45 - ((double)(angvel_corrected.Item1) * 100));
+                }
+                
                 Console.WriteLine("AngularVelocity : " + angvel_corrected);
 
                 Console.WriteLine(pitch);
@@ -421,7 +429,9 @@ namespace StarshipComputer
             HingeDown2.SetFieldFloat("Target Angle", 0);
 
             starship.AutoPilot.Engage();
-            starship.AutoPilot.TargetDirection = starship.Flight(starship.SurfaceReferenceFrame).Retrograde;
+            starship.AutoPilot.ReferenceFrame = starship.SurfaceVelocityReferenceFrame;
+            starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(0, -3.14f, 0);
+            Console.WriteLine(starship.AutoPilot.TargetDirection);
 
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 20) { }
 
@@ -433,11 +443,9 @@ namespace StarshipComputer
                 Thread.Sleep(100);
             }
 
-            starship.Control.SAS = false;
-            starship.AutoPilot.Engage();
-            starship.AutoPilot.TargetPitch = 90;
-
-            starship.AutoPilot.TargetPitchAndHeading(90, 0);
+            starship.AutoPilot.ReferenceFrame = starship.SurfaceReferenceFrame;
+            starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(3.14f, 0, 0);
+            Console.WriteLine(starship.AutoPilot.TargetDirection);
 
             Console.WriteLine("Wings full opened");
             HingeDown1.SetFieldFloat("Target Angle", 90);

@@ -47,7 +47,7 @@ namespace StarshipComputer
                     throt = (float)(stopDistThree / trueRadar);
 
                 if (trueRadar < 200 && Speed < 5)
-                    throt = Throttle.ThrottleToTWR(vessel, 1.05f);
+                    throt = Throttle.ThrottleToTWR(vessel, 1.18f);
                 else if (trueRadar < 100 && Speed < 2)
                     throt = Throttle.ThrottleToTWR(vessel, 0.90f);
 

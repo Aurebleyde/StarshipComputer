@@ -399,13 +399,11 @@ namespace StarshipComputer
         {
             using (StreamWriter Record = new StreamWriter($@"D:\Users\Utilisateur\Documents\KSPRP\Flight\SpaceX\Starship\StarshipRecord_{DateTime.Now.Day}_{DateTime.Now.Month}_{DateTime.Now.Year}_{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}.csv", true))
             {
-                Record.WriteLine("'Time', 'Output Pitch', 'Output Roll', 'Speed', 'Altitude', 'Pitch'");
+                Record.WriteLine("'Time', 'Output Pitch', 'Output Roll', 'Output Yaw', 'Speed', 'Altitude', 'Pitch', 'Roll', 'Yaw', 'Thrust', 'Throttle'");
 
                 while(true)
                 {
-                    pidController.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
-                    PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
-                    Record.WriteLine($"'{Hour(starship.connection.SpaceCenter().UT)}', '{pidController.Output}', '{PidRoll.Output}', '{starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed}', '{starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude}', '{starship.Flight(starship.SurfaceReferenceFrame).Pitch}'");
+                    Record.WriteLine($"'{Hour(starship.connection.SpaceCenter().UT)}', '{pidController.Output}', '{PidRoll.Output}', '{PidYaw.Output}','{starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed}', '{starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude}', '{starship.Flight(starship.SurfaceReferenceFrame).Pitch}', '{starship.Flight(starship.SurfaceReferenceFrame).Roll}', '{starship.Flight(starship.SurfaceReferenceFrame).Heading}', '{starship.Thrust}', '{starship.Control.Throttle}'");
                     Thread.Sleep(100);
                 }
             }
@@ -417,6 +415,7 @@ namespace StarshipComputer
 
         public static PIDLoop pidController;
         public static PIDLoop PidRoll;
+        public static PIDLoop PidYaw;
         public static TimeSpan deltaTime;
 
         public static void PIDcontrol()
@@ -432,13 +431,19 @@ namespace StarshipComputer
             Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
 
             float Tosc = 9.64f;
+            float ToscRoll = 4.093f;
+            float ToscYaw = 4.484f;
             pidController = new PIDLoop(2, 0, 0, 90, 0);
             pidController.Ki = 2 * pidController.Kp / Tosc;
             pidController.Kd = 0.5 * Tosc;
 
-            PidRoll = new PIDLoop(2, 0, 0, 10, -10);
+            PidRoll = new PIDLoop(0.1, 0, 0, 10, -10);
             PidRoll.Ki = 2 * PidRoll.Kp / Tosc;
-            PidRoll.Kd = 0.1 * Tosc;
+            PidRoll.Kd = 1 * ToscRoll;
+
+            PidYaw = new PIDLoop(0.01, 0, 0, 10, -10);
+            PidYaw.Ki = 2 * PidYaw.Kp / ToscYaw;
+            PidYaw.Kd = 0.8 * ToscYaw;
 
             Thread Recorder = new Thread(Record);
             Recorder.Start();
@@ -449,8 +454,14 @@ namespace StarshipComputer
             {
                 DateTime date1 = DateTime.Now;
 
-                pidController.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
-                PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
+                double a = 0 - starship.Flight(starship.SurfaceReferenceFrame).Heading;
+                a = Calculs.Mod((a + 180), 360) - 180;
+                Console.WriteLine(a);
+
+                pidController.Update(starship.connection.SpaceCenter().UT, -2 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
+                PidYaw.Setpoint = 0;
+                PidYaw.Update(starship.connection.SpaceCenter().UT, a);
+                PidRoll.Update(starship.connection.SpaceCenter().UT, -PidYaw.Output);
 
                 HingeUp1.SetFieldFloat("Target Angle", 90-(float)pidController.Output + (float)PidRoll.Output);
                 HingeUp2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output);

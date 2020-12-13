@@ -431,19 +431,19 @@ namespace StarshipComputer
             Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
 
             float Tosc = 9.64f;
-            float ToscRoll = 4.093f;
-            float ToscYaw = 4.484f;
+            float ToscRoll = 7;
+            float ToscYaw = 9.55f;
             pidController = new PIDLoop(2, 0, 0, 90, 0);
             pidController.Ki = 2 * pidController.Kp / Tosc;
             pidController.Kd = 0.5 * Tosc;
 
-            PidRoll = new PIDLoop(0.1, 0, 0, 10, -10);
+            PidRoll = new PIDLoop(1, 0, 0, 10, -10);
             PidRoll.Ki = 2 * PidRoll.Kp / Tosc;
-            PidRoll.Kd = 1 * ToscRoll;
+            PidRoll.Kd = 0.5 * ToscRoll;
 
-            PidYaw = new PIDLoop(0.01, 0, 0, 10, -10);
-            PidYaw.Ki = 2 * PidYaw.Kp / ToscYaw;
-            PidYaw.Kd = 0.8 * ToscYaw;
+            PidYaw = new PIDLoop(0.5, 0, 0, 15, -15);
+            PidYaw.Ki = 4 * PidYaw.Kp / ToscYaw;
+            PidYaw.Kd = 0.5 * ToscYaw;
 
             Thread Recorder = new Thread(Record);
             Recorder.Start();
@@ -454,19 +454,19 @@ namespace StarshipComputer
             {
                 DateTime date1 = DateTime.Now;
 
-                double a = 0 - starship.Flight(starship.SurfaceReferenceFrame).Heading;
+                double a = 180 - starship.Flight(starship.SurfaceReferenceFrame).Heading;
                 a = Calculs.Mod((a + 180), 360) - 180;
                 Console.WriteLine(a);
 
-                pidController.Update(starship.connection.SpaceCenter().UT, -2 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
-                PidYaw.Setpoint = 0;
+                pidController.Update(starship.connection.SpaceCenter().UT, 5 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
                 PidYaw.Update(starship.connection.SpaceCenter().UT, a);
-                PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Pitch/*-PidYaw.Output*/);
+                //PidRoll.Setpoint = PidYaw.Output;
+                PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
 
-                HingeUp1.SetFieldFloat("Target Angle", 90-(float)pidController.Output + (float)PidRoll.Output);
-                HingeUp2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output);
-                HingeDown1.SetFieldFloat("Target Angle", (float)pidController.Output + (float)PidRoll.Output);
-                HingeDown2.SetFieldFloat("Target Angle", (float)pidController.Output - (float)PidRoll.Output);
+                HingeUp1.SetFieldFloat("Target Angle", 90-(float)pidController.Output + (float)PidRoll.Output - (float)PidYaw.Output);
+                HingeUp2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output + (float)PidYaw.Output);
+                HingeDown1.SetFieldFloat("Target Angle", (float)pidController.Output + (float)PidRoll.Output + (float)PidYaw.Output);
+                HingeDown2.SetFieldFloat("Target Angle", (float)pidController.Output - (float)PidRoll.Output - (float)PidYaw.Output);
                 DateTime date2 = DateTime.Now;
 
                 deltaTime = date2 - date1;

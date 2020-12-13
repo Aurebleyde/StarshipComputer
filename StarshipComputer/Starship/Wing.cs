@@ -10,34 +10,48 @@ namespace StarshipComputer
 {
     public class Wings
     {
-        public static List<Part> WingUp = new List<Part>();
-        public static List<Part> WingDown = new List<Part>();
+        public static List<Part> WingUpR = new List<Part>();
+        public static List<Part> WingUpL = new List<Part>();
+        public static List<Part> WingDownR = new List<Part>();
+        public static List<Part> WingDownL = new List<Part>();
 
         public Wings(Vessel starship)
         {
             int WingNumber = 0;
             foreach (Part wing in starship.Parts.All)
             {
-                if (wing.Tag == "WingUp")
+                if (wing.Tag == "WingUpR")
                 {
                     WingNumber += 1;
-                    WingUp.Add(wing);
+                    WingUpR.Add(wing);
+                    Console.WriteLine("Add " + wing + " to Wing Up List.");
+                }
+                if (wing.Tag == "WingUpL")
+                {
+                    WingNumber += 1;
+                    WingUpL.Add(wing);
                     Console.WriteLine("Add " + wing + " to Wing Up List.");
                 }
             }
-            Console.WriteLine(WingUp + "set with " + WingUp.Count + " Wing Up");
+            Console.WriteLine(WingUpR + "set with " + WingUpR.Count + " Wing Up");
 
             WingNumber = 0;
             foreach (Part wing in starship.Parts.All)
             {
-                if (wing.Tag == "WingDown")
+                if (wing.Tag == "WingDownR")
                 {
                     WingNumber += 1;
-                    WingDown.Add(wing);
+                    WingDownR.Add(wing);
+                    Console.WriteLine("Add " + wing + " to Wing Down List.");
+                }
+                if (wing.Tag == "WingDownL")
+                {
+                    WingNumber += 1;
+                    WingDownL.Add(wing);
                     Console.WriteLine("Add " + wing + " to Wing Down List.");
                 }
             }
-            Console.WriteLine(WingDown + "set with " + WingDown.Count + " Wing Down");
+            Console.WriteLine(WingDownR + "set with " + WingDownR.Count + " Wing Down");
         }
     }
 }

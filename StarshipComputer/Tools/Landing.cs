@@ -31,7 +31,7 @@ namespace StarshipComputer
 
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;
-                double maxDecelThree = ((Engines.RaptorSL[0].AvailableThrust * Engines.RaptorSL.Count) / vessel.Mass) - g;
+                double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust * (Engines.RaptorSL.Count - 0)) / vessel.Mass) - g;
                 double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree);
                 double impactTime = trueRadar / Speed;
 
@@ -47,6 +47,8 @@ namespace StarshipComputer
                     throt = (float)(stopDistThree / trueRadar);
 
                 if (trueRadar < 200 && Speed < 5)
+                    throt = Throttle.ThrottleToTWR(vessel, 1.05f);
+                else if (trueRadar < 100 && Speed < 2)
                     throt = Throttle.ThrottleToTWR(vessel, 0.90f);
 
                 if (vessel.Flight(vessel.Orbit.Body.ReferenceFrame).VerticalSpeed > -0.1 && SuicideBurn == false)

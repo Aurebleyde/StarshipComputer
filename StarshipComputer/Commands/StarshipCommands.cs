@@ -91,7 +91,7 @@ namespace StarshipComputer
             }
         }
 
-        [RegisterCommand("wingTest", "Test the hinge of all wings one by one and all at same time", "use /wingTest")]
+        /*[RegisterCommand("wingTest", "Test the hinge of all wings one by one and all at same time", "use /wingTest")]
         public static bool WingTest(params string[] args)
         {
             if (Starship.WingTest())
@@ -102,7 +102,7 @@ namespace StarshipComputer
             {
                 return false;
             }
-        }
+        }*/
 
         [RegisterCommand("wingControlLaunch", "Start Wings Control for the Starship descent", "use /wingControlLaunch")]
         public static bool WingWontrolLaunch(params string[] args)

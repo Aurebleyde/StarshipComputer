@@ -95,6 +95,7 @@
     <Compile Include="Starship\Tank.cs" />
     <Compile Include="Starship\Wing.cs" />
     <Compile Include="Tools\Landing.cs" />
+    <Compile Include="Tools\PID\PidController.cs" />
     <Compile Include="Tools\ThrottleToTWR.cs" />
     <Compile Include="Tools\Trajectories.cs" />
     <EmbeddedResource Include="Form1.resx">

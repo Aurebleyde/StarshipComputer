@@ -1,0 +1,180 @@
+﻿using System;
+public class PIDLoop
+{
+    public double LastSampleTime { get; set; }
+
+    public double Kp { get; set; }
+
+    public double Ki { get; set; }
+
+    public double Kd { get; set; }
+
+    public double Input { get; set; }
+
+    public double Setpoint { get; set; }
+
+    public double Error { get; set; }
+
+    public double Output { get; set; }
+
+    public double MinOutput { get; set; }
+
+    public double MaxOutput { get; set; }
+
+    public double Epsilon { get; set; }
+
+    public double ErrorSum { get; set; }
+
+    public double PTerm { get; set; }
+
+    public double ITerm { get; set; }
+
+    public double DTerm { get; set; }
+
+    public bool ExtraUnwind { get; set; }
+
+    public double ChangeRate { get; set; }
+
+    private bool unWinding;
+
+    public PIDLoop()
+        : this(1, 0, 0)
+    {
+    }
+
+    public PIDLoop(double kp, double ki, double kd, double maxoutput = double.MaxValue, double minoutput = double.MinValue, double nullzone = 0, bool extraUnwind = false)
+    {
+        LastSampleTime = double.MaxValue;
+        Kp = kp;
+        Ki = ki;
+        Kd = kd;
+        Input = 0;
+        Setpoint = 0;
+        Error = 0;
+        Output = 0;
+        MaxOutput = maxoutput;
+        MinOutput = minoutput;
+        Epsilon = nullzone;
+        ErrorSum = 0;
+        PTerm = 0;
+        ITerm = 0;
+        DTerm = 0;
+        ExtraUnwind = extraUnwind;
+    }
+
+
+    public double Update(double sampleTime, double input, double setpoint, double minOutput, double maxOutput, double epsilon)
+    {
+        MaxOutput = maxOutput;
+        MinOutput = minOutput;
+        Epsilon = epsilon;
+        Setpoint = setpoint;
+        return Update(sampleTime, input);
+    }
+
+    public double Update(double sampleTime, double input, double setpoint, double maxOutput, double epsilon)
+    {
+        return Update(sampleTime, input, setpoint, -maxOutput, maxOutput, epsilon);
+    }
+
+    public double Update(double sampleTime, double input)
+    {
+        double error = Setpoint - input;
+        if (error > -Epsilon && error < Epsilon)
+        {
+            // Pretend there is no error (get everything to zero out)
+            // because the error is within the epsilon:
+            error = 0;
+            input = Setpoint;
+            Input = input;
+            Error = error;
+        }
+        double pTerm = error * Kp;
+        double iTerm = 0;
+        double dTerm = 0;
+        if (LastSampleTime < sampleTime)
+        {
+            double dt = sampleTime - LastSampleTime;
+            if (Ki != 0)
+            {
+                if (ExtraUnwind)
+                {
+                    if (Math.Sign(error) != Math.Sign(ErrorSum))
+                    {
+                        if (!unWinding)
+                        {
+                            Ki *= 2;
+                            unWinding = true;
+                        }
+                    }
+                    else if (unWinding)
+                    {
+                        Ki /= 2;
+                        unWinding = false;
+                    }
+                }
+                iTerm = ITerm + error * dt * Ki;
+            }
+            ChangeRate = (input - Input) / dt;
+            if (Kd != 0)
+            {
+                dTerm = -ChangeRate * Kd;
+            }
+        }
+        else
+        {
+            dTerm = DTerm;
+            iTerm = ITerm;
+        }
+        Output = pTerm + iTerm + dTerm;
+        if (Output > MaxOutput)
+        {
+            Output = MaxOutput;
+            if (Ki != 0 && LastSampleTime < sampleTime)
+            {
+                iTerm = Output - Math.Min(pTerm + dTerm, MaxOutput);
+            }
+        }
+        if (Output < MinOutput)
+        {
+            Output = MinOutput;
+            if (Ki != 0 && LastSampleTime < sampleTime)
+            {
+                iTerm = Output - Math.Max(pTerm + dTerm, MinOutput);
+            }
+        }
+        LastSampleTime = sampleTime;
+        Input = input;
+        Error = error;
+        PTerm = pTerm;
+        ITerm = iTerm;
+        DTerm = dTerm;
+        if (Ki != 0) ErrorSum = iTerm / Ki;
+        else ErrorSum = 0;
+        return Output;
+    }
+
+    public void ResetI()
+    {
+        ErrorSum = 0;
+        ITerm = 0;
+        LastSampleTime = double.MaxValue;
+    }
+
+    public override string ToString()
+    {
+        return string.Format("PIDLoop(Kp:{0}, Ki:{1}, Kd:{2}, Min:{3}, Max:{4}, Setpoint:{5}, Error:{6}, Output:{7})",
+            Kp, Ki, Kd, MinOutput, MaxOutput, Setpoint, Error, Output);
+    }
+
+    public string ToCSVString()
+    {
+        return string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
+            LastSampleTime, Error, ErrorSum, Output, Kp, Ki, Kd, MinOutput, MaxOutput);
+    }
+
+    public string ConstrutorString()
+    {
+        return string.Format("pidloop({0}, {1}, {2}, {3}, {4})", Ki, Kp, Kd, MaxOutput, ExtraUnwind);
+    }
+}

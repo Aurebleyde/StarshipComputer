@@ -461,7 +461,7 @@ namespace StarshipComputer
                 pidController.Update(starship.connection.SpaceCenter().UT, -2 - starship.Flight(starship.SurfaceReferenceFrame).Pitch);
                 PidYaw.Setpoint = 0;
                 PidYaw.Update(starship.connection.SpaceCenter().UT, a);
-                PidRoll.Update(starship.connection.SpaceCenter().UT, -PidYaw.Output);
+                PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Pitch/*-PidYaw.Output*/);
 
                 HingeUp1.SetFieldFloat("Target Angle", 90-(float)pidController.Output + (float)PidRoll.Output);
                 HingeUp2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output);

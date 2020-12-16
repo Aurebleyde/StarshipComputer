@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace StarshipComputer
 {
-    public class StarshipCommands
+    public static class StarshipCommands
     {
         [RegisterCommand("help")]
         public static bool Help(params string[] args)

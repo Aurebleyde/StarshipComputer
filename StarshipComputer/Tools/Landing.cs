@@ -26,8 +26,8 @@ namespace StarshipComputer
                 if (SuicideBurnText == false) { throt = Throttle.ThrottleToTWR(vessel, 0.0f); }
 
                 double Speed = vessel.Flight(vessel.SurfaceReferenceFrame).TrueAirSpeed;
-                if (Speed > 110)
-                    Speed = 110;
+                if (Speed > 130)
+                    Speed = 130;
 
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;

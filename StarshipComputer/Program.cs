@@ -44,7 +44,7 @@ namespace StarshipComputer
 
             Console.WriteLine("Commands activating...");
             CommandFire.FireRegistery();
-            Thread Commands = new Thread(starship.CommandControl);
+            Thread Commands = new Thread(Starship.CommandControl);
             Commands.Start();
             Console.WriteLine("Commands activated.");
         }

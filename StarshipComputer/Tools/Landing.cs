@@ -40,7 +40,10 @@ namespace StarshipComputer
                     Console.WriteLine("Landing Burn startup");
                     SuicideBurnText = true;
 
-                    throt = 1;
+                    throt = 0.1f;
+                    vessel.Control.Throttle = throt;
+
+                    while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 45) { }
                 }
 
                 if (SuicideBurnText)

@@ -390,6 +390,11 @@ namespace StarshipComputer
             return (Math.PI / 180) * val;
         }
 
+        public static double ToDegree(double val)
+        {
+            return 180 * val / Math.PI;
+        }
+
         public static void Record()
         {
             using (StreamWriter Record = new StreamWriter($@"D:\Users\Utilisateur\Documents\KSPRP\Flight\SpaceX\Starship\StarshipRecord_{DateTime.Now.Day}_{DateTime.Now.Month}_{DateTime.Now.Year}_{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}.csv", true))
@@ -436,6 +441,8 @@ namespace StarshipComputer
                 TargetAngle = Math.Atan(TargetVectorY / TargetVectorX);
             }
 
+            TargetAngle = ToDegree(TargetAngle);
+
             double TheTargetHeading = 0;
 
             if (TargetVectorY >= 0 && TargetVectorX < 0)
@@ -452,7 +459,7 @@ namespace StarshipComputer
             {
                 //Console.WriteLine("2");
 
-                TheTargetHeading = 0 + TargetAngle;
+                TheTargetHeading = 90 - TargetAngle;
 
             }
 
@@ -470,11 +477,11 @@ namespace StarshipComputer
             {
                 //Console.WriteLine("4");
 
-                TheTargetHeading = 360 + TargetAngle;
+                TheTargetHeading = 270 - TargetAngle;
 
             }
 
-            //Console.WriteLine("Targeted Heading" + TheTargetHeading);
+            Console.WriteLine("Targeted Heading" + TheTargetHeading);
 
             return TheTargetHeading;
         }
@@ -485,9 +492,9 @@ namespace StarshipComputer
             double ImpactLon = 0;
 
             double Tosc = 9.27f;
-            PIDLoop PitchPid = new PIDLoop(0.1, 0, 0, 15, -15);
+            PIDLoop PitchPid = new PIDLoop(1, 0, 0, 0, 10);
             PitchPid.Ki = 2 * PitchPid.Kp / Tosc;
-            PitchPid.Kd = 0.01 * Tosc;
+            PitchPid.Kd = 2 * Tosc;
 
             while (starship.Thrust < 100000)
             {
@@ -499,17 +506,30 @@ namespace StarshipComputer
                 PitchPid.Update(starship.connection.SpaceCenter().UT, 0 - ZoneDistance);
                 PitchTarget = -PitchPid.Output;
 
-                if (ZoneDistance < Distance(starship.Flight(starship.SurfaceReferenceFrame).Latitude, InitPos.Item1, starship.Flight(starship.SurfaceReferenceFrame).Longitude, InitPos.Item2))
-                    HeadingTarget = TargetedHeading();
+                double a = TargetedHeading() - starship.Flight(starship.SurfaceReferenceFrame).Heading;
+                a = Calculs.Mod((a + 180), 360) - 180;
+
+                if (Distance(ImpactLat, starship.Flight(starship.SurfaceReferenceFrame).Latitude, ImpactLon, starship.Flight(starship.SurfaceReferenceFrame).Longitude) < Distance(starship.Flight(starship.SurfaceReferenceFrame).Latitude, InitPos.Item1, starship.Flight(starship.SurfaceReferenceFrame).Longitude, InitPos.Item2) + 10)
+                {
+                    HeadingTarget = a;
+                    Console.WriteLine("1");
+                }
                 else
-                    HeadingTarget = TargetedHeading() + 180;
+                {
+                    PitchTarget = PitchPid.Output * 1.2;
+                    Console.WriteLine("2");
+                    if (HeadingTarget > 180)
+                        HeadingTarget = a - 180;
+                    else
+                        HeadingTarget = a + 180;
+                }
 
                 /*if (HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading >= 30)
                     HeadingTarget = starship.Flight(starship.SurfaceReferenceFrame).Heading - 30;
                 else if (HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading <= -30)
                     HeadingTarget = starship.Flight(starship.SurfaceReferenceFrame).Heading + 30;*/
 
-                //Console.WriteLine("After Correction" + HeadingTarget);
+                Console.WriteLine("After Correction : " + HeadingTarget);
             }
         }
 
@@ -532,13 +552,13 @@ namespace StarshipComputer
             pidController.Ki = 4 * pidController.Kp / Tosc;
             pidController.Kd = 0.5 * Tosc;
 
-            PidRoll = new PIDLoop(2, 0, 0,15, -15);
-            PidRoll.Ki = 4 * PidRoll.Kp / Tosc;
+            PidRoll = new PIDLoop(2, 0, 0, 15, -15);
+            PidRoll.Ki = 2 * PidRoll.Kp / Tosc;
             PidRoll.Kd = 2 * ToscRoll;
 
-            PidYaw = new PIDLoop(2, 0, 0, 20, -20);
+            PidYaw = new PIDLoop(2, 0, 0, 25, -25);
             PidYaw.Ki = 4 * PidYaw.Kp / ToscYaw;
-            PidYaw.Kd = 0.5 * ToscYaw;
+            PidYaw.Kd = 2 * ToscYaw;
 
             Thread Recorder = new Thread(Record);
             Recorder.Start();
@@ -550,7 +570,7 @@ namespace StarshipComputer
                 DateTime date1 = DateTime.Now;
 
                 double a = HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading;
-                a = ((a + 180)% 360) - 180; //Calculs.Mod((a + 180), 360) - 180;
+                a = Calculs.Mod((a + 180), 360) - 180; //((a + 180) % 360) - 180; //
                 //Console.WriteLine(HeadingTarget);
                 Console.WriteLine(a);
 
@@ -582,7 +602,7 @@ namespace StarshipComputer
             starship.AutoPilot.AutoTune = true;
 
             starship.Control.Pitch = 1;
-            while (starship.AutoPilot.PitchError > 20 || starship.AutoPilot.HeadingError > 180) { }
+            while (starship.AutoPilot.PitchError > 45 || starship.AutoPilot.HeadingError > 180) { }
             starship.Control.Pitch = 0;
 
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 20) { }

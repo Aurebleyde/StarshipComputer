@@ -19,23 +19,23 @@ namespace StarshipComputer
 
             double landedAltitude = 25;
 
-            while (vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude > 8000) { Thread.Sleep(500); }
+            while (vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude > 3000) { Thread.Sleep(500); }
 
             while (true)
             {
                 if (SuicideBurnText == false) { throt = Throttle.ThrottleToTWR(vessel, 0.0f); }
 
                 double Speed = vessel.Flight(vessel.SurfaceReferenceFrame).TrueAirSpeed;
-                if (Speed > 130)
+                if (Speed > 130) //130
                     Speed = 130;
 
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;
-                double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust * (Engines.RaptorSL.Count - 0)) / vessel.Mass) - g;
-                double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree);
+                double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust * 2/*(Engines.RaptorSL.Count - 0)*/) / vessel.Mass) - g;
+                double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree); 
                 double impactTime = trueRadar / Speed;
 
-                if (trueRadar - (Speed * 1.0f) <= stopDistThree && SuicideBurnText == false)
+                if (trueRadar - (Speed * 1.0f) <= stopDistThree && SuicideBurnText == false || trueRadar < 800)//1.0
                 {
                     Console.WriteLine("Landing Burn startup");
                     SuicideBurnText = true;
@@ -50,9 +50,9 @@ namespace StarshipComputer
                     throt = (float)(stopDistThree / trueRadar);
 
                 if (trueRadar < 200 && Speed < 5)
-                    throt = Throttle.ThrottleToTWR(vessel, 1.18f);
+                    throt = Throttle.ThrottleToTWR(vessel, 0.99f); //1.18
                 else if (trueRadar < 100 && Speed < 2)
-                    throt = Throttle.ThrottleToTWR(vessel, 0.90f);
+                    throt = Throttle.ThrottleToTWR(vessel, 0.85f); //0.90
 
                 if (vessel.Flight(vessel.Orbit.Body.ReferenceFrame).VerticalSpeed > -0.1 && SuicideBurn == false)
                 {

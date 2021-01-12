@@ -130,10 +130,49 @@ namespace StarshipComputer
             }
         }
 
-        [RegisterCommand("takeCoords", "Tale Starship's coordonees", "use /takeCoords")]
+        [RegisterCommand("landingBurnControl", "Start Landing Burn Control for land a vessel", "use /landingBurnControl")]
+        public static bool LandingBurnControl(params string[] args)
+        {
+            if (Starship.LandingBurnControl())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("takeCoords", "Take Starship's coordonees", "use /takeCoords")]
         public static bool TakeCoords(params string[] args)
         {
             if (Starship.TakeCoords())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("takeFields", "Take fields names of module", "use /takeFields")]
+        public static bool TakeFields(params string[] args)
+        {
+            if (Starship.TakeFieldOfModule())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("takeWingsModules", "Take modules names of each Wings", "use /takeWingsModules")]
+        public static bool TakeWingsModules(params string[] args)
+        {
+            if (Starship.TakeAllWingsModules())
             {
                 return true;
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,6 +20,23 @@ namespace StarshipComputer
             if (val.CompareTo(min) < 0) return min;
             else if (val.CompareTo(max) > 0) return max;
             else return val;
+        }
+
+        public static double VectorScal(Vector2 Impact, Vector2 Zone)
+        {
+            Vector2 ImpactZone = Impact - Zone;
+            double scal = ImpactZone.LengthSquared();
+            scal = (Impact.LengthSquared() + Zone.LengthSquared() - scal) / 2;
+            Console.WriteLine("Scal : " + scal);
+            return scal;
+        }
+
+        public static double VectorAngle(Vector2 Impact, Vector2 Zone)
+        {
+            Console.WriteLine("Lenght : " + Impact.Length());
+            double Cos = Math.Acos(VectorScal(Impact, Zone) / (Impact.Length() * Zone.Length()));
+            Console.WriteLine("Angle : " + (Cos * 180) / Math.PI);
+            return (Cos * 180) / Math.PI;
         }
     }
 }

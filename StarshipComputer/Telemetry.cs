@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace StarshipComputer
 {
-    public partial class Form1 : Form
+    public partial class Telemetry : Form
     {
-        public Form1()
+        public Telemetry()
         {
             InitializeComponent();
         }
@@ -20,6 +20,21 @@ namespace StarshipComputer
         private void Form1_Load(object sender, EventArgs e)
         {
 
+        }
+
+        void InvokeAction(Action action)
+        {
+            this.Invoke(action);
+        }
+
+        private void Update()
+        {
+            while (true)
+            {
+                this.InvokeAction(() =>
+                {
+                });
+            }
         }
     }
 }

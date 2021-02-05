@@ -1,6 +1,6 @@
 ﻿namespace StarshipComputer
 {
-    partial class Form1
+    partial class Telemetry
     {
         /// <summary>
         /// Variable nécessaire au concepteur.

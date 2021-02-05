@@ -22,7 +22,7 @@ namespace StarshipComputer
             MainThread.Start();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new Telemetry());
         }
 
         public static int numberPrototype = 1;
@@ -36,7 +36,7 @@ namespace StarshipComputer
             Console.WriteLine("Starship Computer in startup");
 
             Console.WriteLine("Connection...");
-            Connections Connections = new Connections(ConnectionList.ethernet, MainThread);
+            Connections Connections = new Connections(ConnectionList.data, MainThread);
 
             Console.WriteLine("Connection to Starship and setup of Starship...");
             starship = new Starship(Connections.Connection, numberPrototype);

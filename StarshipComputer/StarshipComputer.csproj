@@ -82,11 +82,11 @@
     <Compile Include="ConnectionList.cs" />
     <Compile Include="Connections.cs" />
     <Compile Include="Starship\Engines.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="Telemetry.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="Telemetry.Designer.cs">
+      <DependentUpon>Telemetry.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -99,8 +99,8 @@
     <Compile Include="Tools\PID\PidController.cs" />
     <Compile Include="Tools\ThrottleToTWR.cs" />
     <Compile Include="Tools\Trajectories.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Include="Telemetry.resx">
+      <DependentUpon>Telemetry.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

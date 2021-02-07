@@ -21,6 +21,8 @@ namespace StarshipComputer
 
             while (vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude > 3000) { Thread.Sleep(500); }
 
+            bool Engine3Cut = false;
+
             while (true)
             {
                 if (SuicideBurnText == false) { throt = Throttle.ThrottleToTWR(vessel, 0.0f, 1); }
@@ -44,19 +46,28 @@ namespace StarshipComputer
 
                     throt = 0.001f;
                     vessel.Control.Throttle = throt;
+                    Engines.ActivateEngineSL(1);
+                    Engines.ActivateEngineSL(2);
+                    Engines.ActivateEngineSL(3);
 
-                    while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 65) { } //45
+                    while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 60) { } //45
+                }
+
+                if (Engines.RaptorSL[2 - 1].Thrust > 100000 && Engines.RaptorSL[3 - 1].Thrust > 100000 && Engine3Cut == false)
+                {
+                    Engines.CutoffEngineSL(1);
+                    Engine3Cut = true;
                 }
 
                 if (SuicideBurnText)
                     throt = (float)(stopDistThree / trueRadar);
 
                 if (trueRadar < 100 && vSpeed > -2)
-                    throt = Throttle.ThrottleToTWR(vessel, 0.85f, 2); //1.18
+                    throt = Throttle.ThrottleToTWR(vessel, 0.9f, 2); //1.18
                 else if (trueRadar < 200 && vSpeed > -5)
                     throt = Throttle.ThrottleToTWR(vessel, 1.3f, 2); //0.90
 
-                if (vessel.Flight(vessel.Orbit.Body.ReferenceFrame).VerticalSpeed > -0.1 && SuicideBurn == false && trueRadar < 15)
+                if (vessel.Flight(vessel.Orbit.Body.ReferenceFrame).VerticalSpeed > -0.1 && SuicideBurn == false && trueRadar < 5)
                 {
                     vessel.Control.Throttle = 0;
                     throt = 0;

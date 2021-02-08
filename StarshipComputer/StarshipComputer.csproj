@@ -81,7 +81,9 @@
     <Compile Include="Commands\StarshipCommands.cs" />
     <Compile Include="ConnectionList.cs" />
     <Compile Include="Connections.cs" />
+    <Compile Include="Interfaces\IEngine.cs" />
     <Compile Include="Starship\Engines.cs" />
+    <Compile Include="Starship\Engines\Raptor.cs" />
     <Compile Include="Telemetry.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -78,7 +78,7 @@ namespace StarshipComputer
             }
         }
 
-        [RegisterCommand("engineGimbal", "Test the gimbal of all engine one by one and all at same time", "use /engineGimbal")]
+        /*[RegisterCommand("engineGimbal", "Test the gimbal of all engine one by one and all at same time", "use /engineGimbal")]
         public static bool EngineGimbal(params string[] args)
         {
             if (Starship.GimbalTest())
@@ -89,7 +89,7 @@ namespace StarshipComputer
             {
                 return false;
             }
-        }
+        }*/
 
         /*[RegisterCommand("wingTest", "Test the hinge of all wings one by one and all at same time", "use /wingTest")]
         public static bool WingTest(params string[] args)

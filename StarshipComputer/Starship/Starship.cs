@@ -88,7 +88,31 @@ namespace StarshipComputer
             }
         }
 
-        public static bool GimbalTest()
+        public static bool StaticFire(string[] arg)
+        {
+            Engines.RaptorSL[0].Activate();
+            Engines.RaptorSL[1].Activate();
+            Engines.RaptorSL[2].Activate();
+
+            starship.Control.Throttle = Throttle.ThrottleToTWR(starship, 0.8f, 3);
+
+            while (Engines.RaptorSL[0].Thrust() < 330770 && Engines.RaptorSL[1].Thrust() < 330770 && Engines.RaptorSL[2].Thrust() < 330770) { }
+
+            for (int i = 0; i < 1000; i++)
+            {
+                starship.Control.Throttle = Throttle.ThrottleToTWR(starship, 0.8f, 3);
+            }
+
+            Engines.RaptorSL[0].Shutdown();
+            Engines.RaptorSL[1].Shutdown();
+            Engines.RaptorSL[2].Shutdown();
+
+            starship.Control.Throttle = 0;
+
+            return true;
+        }
+
+        /*public static bool GimbalTest()
         {
             Console.WriteLine("Starship Gimbal Test start...");
 
@@ -167,9 +191,9 @@ namespace StarshipComputer
             }
 
             return true;
-        }
+        }*/
 
-        public static bool StaticFire(string[] args)
+        /*public static bool StaticFire(string[] args)
         {
             int number = 0;
             switch (args[0])
@@ -262,7 +286,7 @@ namespace StarshipComputer
             }
 
             return true;
-        }
+        }*/
 
         /*public static bool WingTest()
         {
@@ -494,7 +518,7 @@ namespace StarshipComputer
             return TheTargetHeading;
         }
 
-        public static void EngineCutoffAscent()
+        /*public static void EngineCutoffAscent()
         {
             bool Engine1 = false;
             bool Engine2 = false;
@@ -533,7 +557,7 @@ namespace StarshipComputer
             PitchPid.Ki = 2 * PitchPid.Kp / Tosc;
             PitchPid.Kd = 2 * Tosc;*/
 
-            starship.Control.SAS = false;
+            /*starship.Control.SAS = false;
             starship.AutoPilot.Engage();
             starship.AutoPilot.AutoTune = false;
 
@@ -554,9 +578,9 @@ namespace StarshipComputer
 
             while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 10)
             {
-                a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*/;
+                a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*///;
                 /*a = Calculs.Mod((a + 180), 360) - 180;*/
-                HeadingTarget = Math.Round(a);
+                /*HeadingTarget = Math.Round(a);
 
                 double Variable = starship.Flight().VerticalSpeed;
 
@@ -575,8 +599,8 @@ namespace StarshipComputer
                     if (Throt < 0.001)
                         Throt = 0.001f;
                     starship.Control.Throttle = Throt;
-                    starship.AutoPilot.TargetPitchAndHeading(82, 90/*(float)HeadingTarget*/);
-                    starship.AutoPilot.TargetRoll = 0;
+                    starship.AutoPilot.TargetPitchAndHeading(82, 90/*(float)HeadingTarget*///);
+                    /*starship.AutoPilot.TargetRoll = 0;
                 }
                 else
                 {
@@ -616,13 +640,13 @@ namespace StarshipComputer
 
                 if (Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) > 50 && mode == 1)
                 {
-                    a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*/;
-                }
-                else
+                    a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*///;
+                /*}
+                /*else
                     a = starship.Flight(starship.SurfaceReferenceFrame).Heading;
                 /*a = Calculs.Mod((a + 180), 360) - 180;*/
 
-                double Pitch = ZoneDistance / 1000;
+                /*double Pitch = ZoneDistance / 1000;
                 if ((ZoneDistance < 500 && ZoneDistance > 20 && mode == 2)) //<
                 {
                     Math.Round(Pitch *= 60);
@@ -672,7 +696,7 @@ namespace StarshipComputer
                         HeadingTarget = a - 180;
                     else
                         HeadingTarget = a + 180;*/
-                }
+                /*}
 
                 if ((starship.AutoPilot.HeadingError > 2 || starship.AutoPilot.PitchError > 1) && starship.AutoPilot.RollError < 90)
                     starship.Control.RCS = true;
@@ -684,13 +708,13 @@ namespace StarshipComputer
                 else if (HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading <= -30)
                     HeadingTarget = starship.Flight(starship.SurfaceReferenceFrame).Heading + 30;*/
 
-                starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
+                /*starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
                 starship.AutoPilot.TargetRoll = 0;
 
                 Console.WriteLine("After Correction : " + HeadingTarget);
                 Console.WriteLine("Pitch Target : " + PitchTarget);
             }
-        }
+        }*/
 
         public static void PIDcontrol()
         {
@@ -1038,8 +1062,8 @@ namespace StarshipComputer
             Console.WriteLine("Coords taked !");
 
             Console.WriteLine("Wings control started");
-            Thread LandingControl = new Thread(LandingGuidance);
-            LandingControl.Start();
+            /*Thread LandingControl = new Thread(LandingGuidance);
+            LandingControl.Start();*/
 
             Thread WingsControl = new Thread(PIDcontrolNewStarship);
             WingsControl.Start();
@@ -1049,7 +1073,7 @@ namespace StarshipComputer
             
 
             Console.WriteLine("Landing control started");
-            Landing.LandingBurn(starship);
+            //Landing.LandingBurn(starship);
 
             return true;
         }
@@ -1057,7 +1081,7 @@ namespace StarshipComputer
         public static bool LandingBurnControl()
         {
             Console.WriteLine("Landing control started");
-            Landing.LandingBurn(starship);
+            //Landing.LandingBurn(starship);
 
             return true;
         }

@@ -12,7 +12,7 @@ namespace StarshipComputer
 {
     public class Engines
     {
-        public static List<Engine> RaptorSL = new List<Engine>();
+        public static List<Raptor> RaptorSL = new List<Raptor>();
         public static List<Engine> RaptorVac = new List<Engine>();
         public static List<Engine> RCS = new List<Engine>();
 
@@ -30,7 +30,7 @@ namespace StarshipComputer
                         
                         string EngineNum = Regex.Match(engine.Part.Tag, @"\d+").Value;
                         int Num = Int32.Parse(EngineNum) - 1;
-                        RaptorSL.Insert(Num, engine);
+                        RaptorSL.Insert(Num, new Raptor(engine));
                         //RaptorSL.Add(engine);
                         Console.WriteLine("Add " + engine + " to Engine Sea Level List.");
                     }
@@ -71,7 +71,7 @@ namespace StarshipComputer
             Console.WriteLine(RCS + "set with " + RCS.Count + " RCS");
         }
 
-        public static int ActiveEngines()
+        /*public static int ActiveEngines()
         {
             int Active = 0;
             foreach (Engine Engine in Engines.RaptorSL)
@@ -140,6 +140,6 @@ namespace StarshipComputer
             Console.WriteLine("Raptor engine " + Number + 1 + " locked");
 
             Starship.starship.AutoPilot.Engage();
-        }
+        }*/
     }
 }

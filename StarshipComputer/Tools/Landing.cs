@@ -10,7 +10,7 @@ namespace StarshipComputer
 {
     public class Landing
     {
-        public static void LandingBurn(Vessel vessel)
+        /*public static void LandingBurn(Vessel vessel)
         {
             vessel.Control.Throttle = 0;
             bool SuicideBurnText = false;
@@ -35,8 +35,8 @@ namespace StarshipComputer
 
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;
-                double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust * 2/*(Engines.RaptorSL.Count - 0)*/) / vessel.Mass) - g;
-                double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree); 
+                double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust * 2/*(Engines.RaptorSL.Count - 0)*//*) / vessel.Mass) - g;
+                /*double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree); 
                 double impactTime = trueRadar / Speed;
 
                 if ((trueRadar - (Speed * 1.0f) <= stopDistThree || trueRadar < 600) && SuicideBurnText == false)//1.0 | 1000
@@ -82,6 +82,6 @@ namespace StarshipComputer
 
                 vessel.Control.Throttle = throt;
             }
-        }
+        }*/
     }
 }

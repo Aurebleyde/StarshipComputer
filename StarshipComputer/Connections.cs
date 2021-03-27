@@ -12,7 +12,7 @@ namespace StarshipComputer
 {
     public class Connections
     {
-        public Connection Connection;
+        public static Connection Connection;
         public Connections(ConnectionList list, Thread thread)
         {
             try

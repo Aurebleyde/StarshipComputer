@@ -13,12 +13,20 @@ namespace StarshipComputer
         {
             float Mass = vessel.Mass * vessel.Orbit.Body.SurfaceGravity;
             float T = twr * Mass;
-            float Throttle = (T - (330770 * Number/*Engines.RaptorSL.Count*/)) / (vessel.AvailableThrust - (330770 * Number/*Engines.RaptorSL.Count*/));
+            float Throttle = (T - (330770 * Number)) / ((Engines.RaptorSL[0].MaxThrust() * Number) - (330770 * Number));
 
             if (Throttle < 0.0001)
                 Throttle = 0.0001f;
 
             return Throttle;
+        }
+
+        public static float TWR(Vessel vessel)
+        {
+            float Mass = vessel.Mass * vessel.Orbit.Body.SurfaceGravity;
+            float twr = vessel.Thrust / Mass;
+
+            return twr;
         }
     }
 }

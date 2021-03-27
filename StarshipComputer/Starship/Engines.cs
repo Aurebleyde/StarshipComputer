@@ -14,6 +14,7 @@ namespace StarshipComputer
     {
         public static List<Raptor> RaptorSL = new List<Raptor>();
         public static List<Engine> RaptorVac = new List<Engine>();
+        public static List<Engine> RaptorSH = new List<Engine>();
         public static List<Engine> RCS = new List<Engine>();
 
         public Engines(Vessel starship)
@@ -48,6 +49,18 @@ namespace StarshipComputer
                     }
                 }
                 Console.WriteLine(RaptorVac + "set with " + RaptorVac.Count + " Raptor Vacuum");
+
+                EngineNumber = 0;
+                foreach (Engine engine in starship.Parts.Engines)
+                {
+                    if (engine.Part.Tag == "RaptorSH")
+                    {
+                        EngineNumber += 1;
+                        RaptorSH.Add(engine);
+                        Console.WriteLine("Add " + engine + " to Super Heavy Raptor List.");
+                    }
+                }
+                Console.WriteLine(RaptorSH + "set with " + RaptorSH.Count + " Super Heavy Raptor");
             }
             catch (Exception e)
             {

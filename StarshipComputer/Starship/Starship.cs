@@ -16,9 +16,17 @@ namespace StarshipComputer
     public class Starship
     {
         public static Vessel starship;
+        public static Connection Connection;
+
+        public static int apoTarget = 926000;
+        public static int periTarget = 926000;
+        public static int headTarget = 90;
+        public static int incli = 25;
 
         public Starship(Connection connection, int number)
         {
+            Connection = connection;
+
             foreach (Vessel vessel in connection.SpaceCenter().Vessels)
             {
                 if (vessel.Name.Contains("Starship") && vessel.Name.Contains("SN") && vessel.Type == VesselType.Probe)
@@ -376,13 +384,13 @@ namespace StarshipComputer
             return true;
         }
 
-        public static bool WingWontrolLaunch()
+        /*public static bool WingWontrolLaunch()
         {
             Thread Wing = new Thread(WingControl);
             Wing.Start();
 
             return true;
-        }
+        }*/
 
         public static bool TakeCoords()
         {
@@ -431,11 +439,11 @@ namespace StarshipComputer
         {
             using (StreamWriter Record = new StreamWriter($@"D:\Users\Utilisateur\Documents\KSPRP\Flight\SpaceX\Starship\StarshipRecord_{DateTime.Now.Day}_{DateTime.Now.Month}_{DateTime.Now.Year}_{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}.csv", true))
             {
-                Record.WriteLine("'Time', 'Output Pitch', 'Output Roll', 'Output Yaw', 'Speed', 'Altitude', 'Pitch', 'Roll', 'Yaw', 'Thrust', 'Throttle', 'Target Pitch', 'Target Heading'");
+                Record.WriteLine("'Time', 'Output Pitch', 'Output Roll', 'Output Yaw', 'Speed', 'Altitude', 'Pitch', 'Roll', 'Yaw', 'Thrust', 'Throttle', 'Target Pitch', 'Target Heading', 'Autopilot Pitch', 'Autopilot Heading', 'Autopilot Roll'");
 
                 while(true)
                 {
-                    Record.WriteLine($"'{Hour(starship.connection.SpaceCenter().UT)}', '{pidController.Output}', '{PidRoll.Output}', '{PidYaw.Output}','{starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed}', '{starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude}', '{starship.Flight(starship.SurfaceReferenceFrame).Pitch}', '{starship.Flight(starship.SurfaceReferenceFrame).Roll}', '{starship.Flight(starship.SurfaceReferenceFrame).Heading}', '{starship.Thrust}', '{starship.Control.Throttle}', '{PitchTarget}', '{HeadingTarget}'");
+                    Record.WriteLine($"'{Hour(starship.connection.SpaceCenter().UT)}', '{pidController.Output}', '{PidRoll.Output}', '{PidYaw.Output}','{starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed}', '{starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude}', '{starship.Flight(starship.SurfaceReferenceFrame).Pitch}', '{starship.Flight(starship.SurfaceReferenceFrame).Roll}', '{starship.Flight(starship.SurfaceReferenceFrame).Heading}', '{starship.Thrust}', '{starship.Control.Throttle}', '{PitchTarget}', '{HeadingTarget}', '{starship.AutoPilot.TargetPitch}', '{starship.AutoPilot.TargetHeading}', '{starship.AutoPilot.TargetRoll}'");
                     Thread.Sleep(100);
                 }
             }
@@ -543,6 +551,281 @@ namespace StarshipComputer
 
             Engines.CutoffEngineSL(1);
             Engines.MoveEngineToOff(1);
+        }*/
+
+        public static bool Launch()
+        {
+            SuperHeavy SH = new SuperHeavy(Connection);
+
+            SH.Liftoff();
+
+            while(starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed < 70) { }
+
+            Thread gt = new Thread(SH.GravityTurn);
+            gt.Start();
+            SH.stageSep();
+
+            Thread.Sleep(3000);
+
+            SES1();
+
+            SECO();
+
+            return true;
+        }
+        public static void SES1()
+        {
+            starship = Connection.SpaceCenter().ActiveVessel;
+
+            starship.Control.Throttle = 0.001f;
+            foreach (var item in Engines.RaptorVac)
+            {
+                item.Active = true;
+            }
+
+            Thread.Sleep(5000);
+
+            starship.Control.Throttle = 1;
+        }
+
+        public static void SECO()
+        {
+            Connection.SpaceCenter().PhysicsWarpFactor = 1;
+            starship.Control.Throttle = 1;
+            while (true)
+            {
+                if (starship.Flight(starship.SurfaceReferenceFrame).MeanAltitude > 150 && starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 0)
+                {
+                    starship.AutoPilot.TargetPitch = 25;
+                }
+                else
+                {
+                    starship.AutoPilot.TargetPitch = 35;
+                }
+
+
+                if (starship.Orbit.ApoapsisAltitude >= periTarget - 30000)
+                {
+                    Connection.SpaceCenter().PhysicsWarpFactor = 0;
+                    starship.Control.Throttle = 0.001f;
+                }
+
+                if (starship.Orbit.ApoapsisAltitude >= periTarget)
+                {
+                    starship.Control.Throttle = 0;
+                    Console.WriteLine("STAGE 2 : Second engine cutoff.");
+                    //starship.Parts.WithTag("Second")[0].Engine.GimbalLimit = 0;
+                    Console.WriteLine("STAGE 2 : Apoapsis = " + starship.Orbit.ApoapsisAltitude);
+                    Console.WriteLine("STAGE 2 : Periapsis = " + starship.Orbit.PeriapsisAltitude);
+                    Console.WriteLine("STAGE 2 : Inclination = " + (starship.Orbit.Inclination * 180) / Math.PI);
+
+                    Circularisation();
+                    break;
+                }
+            }
+        }
+
+        public static double ForceVive(double periAlt, double a)
+        {
+            return Math.Sqrt(starship.Orbit.Body.GravitationalParameter * ((2 / (periAlt + starship.Orbit.Body.EquatorialRadius)) - (1 / a)));
+        }
+
+        public static double DvIncli()
+        {
+            double SpeedOnGoodOrbit = ForceVive(apoTarget, (apoTarget + periTarget + starship.Orbit.Body.EquatorialRadius) / 2);
+            double dv = 2 * SpeedOnGoodOrbit * Math.Sin(incli - starship.Orbit.Inclination / 2);
+            return dv;
+        }
+
+        public static void Circularisation()
+        {
+            Thread.Sleep(10000);
+
+            double SpeedApo = ForceVive(starship.Orbit.ApoapsisAltitude, starship.Orbit.SemiMajorAxis);
+            double SpeedToNewApo = ForceVive(starship.Orbit.ApoapsisAltitude, ((starship.Orbit.ApoapsisAltitude + periTarget) / 2) + starship.Orbit.Body.EquatorialRadius);
+            double dV = SpeedToNewApo - SpeedApo;
+
+            foreach (var DeleteNode in starship.Control.Nodes)
+            {
+                DeleteNode.Remove();
+            }
+
+            Node node = starship.Control.AddNode(Connection.SpaceCenter().UT + starship.Orbit.TimeToApoapsis, (float)dV, -(float)DvIncli() / 8, 0);
+
+            starship.AutoPilot.Engage();
+            starship.AutoPilot.ReferenceFrame = starship.Orbit.Body.ReferenceFrame;
+            starship.AutoPilot.TargetDirection = node.Direction(starship.Orbit.Body.ReferenceFrame);
+            starship.AutoPilot.TargetRoll = 0;
+            starship.Control.RCS = true;
+
+
+            double m = starship.Mass;
+            double isp = Engines.RaptorVac[0].SpecificImpulse;
+            double F = Engines.RaptorVac[0].AvailableThrust * 3;
+            double BurnTime = (m - (m / Math.Exp(node.DeltaV / (isp * starship.Orbit.Body.GravitationalParameter)))) / (F / (isp * starship.Orbit.Body.GravitationalParameter));
+
+            Console.WriteLine("BurnTime : " + BurnTime);
+
+            while (node.TimeTo - (BurnTime / 2) > 30) { }
+            while (node.TimeTo - (BurnTime / 2) > 5) { starship.Control.Forward = 1; }
+            DateTime StartTime = DateTime.Now;
+            starship.Control.Forward = 0;
+
+            starship.Control.Throttle = 0.001f;
+            //starship.Parts.WithTag("Second")[0].Engine.GimbalLimit = 1;
+            Console.WriteLine("STAGE2 : Second Engine Startup.");
+
+            var dTime = DateTime.Now - StartTime;
+
+            while (/*(dTime.TotalSeconds < BurnTime || starship.Orbit.PeriapsisAltitude < ) && */(starship.Orbit.ApoapsisAltitude < apoTarget || starship.Orbit.PeriapsisAltitude < periTarget - 15000))
+            {
+                dTime = DateTime.Now - StartTime;
+                starship.AutoPilot.TargetDirection = node.Direction(starship.Orbit.Body.ReferenceFrame);
+            }
+
+            Console.WriteLine("dTime : " + dTime.ToString());
+
+            starship.Control.Throttle = 0;
+            Console.WriteLine("STAGE2 : Second Engine Cutoff.");
+            //starship.Parts.WithTag("Second")[0].Engine.GimbalLimit = 0;
+
+            Console.WriteLine("STAGE 2 : Apoapsis = " + starship.Orbit.ApoapsisAltitude);
+            Console.WriteLine("STAGE 2 : Periapsis = " + starship.Orbit.PeriapsisAltitude);
+            Console.WriteLine("STAGE 2 : Inclination = " + (starship.Orbit.Inclination * 180) / Math.PI);
+        }
+
+        public static void NewLandingGuidanceLatitude()
+        {
+            Atmospheric.CreateTargetedTrajectory(starship, InitPos);
+
+            starship.AutoPilot.Engage();
+            starship.AutoPilot.TargetRoll = 0;
+
+            while (starship.Thrust < 100)
+            {
+                Atmospheric.GuidanceByLatitude();
+
+                double ZoneDistance = Distance(ImpactPoint().Item1, InitPos.Item1, ImpactPoint().Item2, InitPos.Item2);
+
+                double Pitch = ZoneDistance / 1000;
+                if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance > 500)
+                {
+                    Math.Round(Pitch *= 15);
+                }
+                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance <= 500 && ZoneDistance > 100)
+                {
+                    Math.Round(Pitch *= 5); //1
+                }
+
+                double Head = Atmospheric.BaseHeading;
+                Console.WriteLine("Base Heading : " + Head);
+                double angle = Calculs.Clamp((Distance(InitPos.Item2, ImpactPoint().Item2, 0, 0) / 100) * 1, 0, 60);
+                if (Atmospheric.teta < Math.PI / 2 && Atmospheric.teta > 0)
+                {
+                    Pitch = -(Pitch * 1.1);
+                    Head += angle;
+                    Console.WriteLine("1");
+                }
+                else if (Atmospheric.teta > -(Math.PI / 2) && Atmospheric.teta < 0)
+                {
+                    Pitch = -(Pitch * 1.1);
+                    Head -= angle;
+                    Console.WriteLine("2");
+                }
+                else if (Atmospheric.teta > Math.PI / 2 && Atmospheric.teta > 0)
+                {
+                    Pitch = Pitch * 1.1;
+                    Head += angle;
+                    Console.WriteLine("3");
+                }
+                else if (Atmospheric.teta < -(Math.PI / 2) && Atmospheric.teta < 0)
+                {
+                    Pitch = Pitch * 1.1;
+                    Head -= angle;
+                    Console.WriteLine("4");
+                }
+
+                if (Pitch > 15)
+                    Pitch = 15;
+                else if (Pitch < -15)
+                    Pitch = -15;
+
+                HeadingTarget = Head;
+                PitchTarget = Pitch;
+                starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
+                Console.WriteLine("Head target : " + HeadingTarget);
+                Console.WriteLine("Pitch Target : " + PitchTarget);
+                Console.WriteLine("Angle : " + angle);
+
+                if ((starship.AutoPilot.HeadingError > 2 || starship.AutoPilot.PitchError > 1) && starship.AutoPilot.RollError < 90 && starship.Flight(starship.SurfaceReferenceFrame).Pitch < 20 && starship.Flight(starship.SurfaceReferenceFrame).Pitch > -20)
+                    starship.Control.RCS = true;
+                else
+                    starship.Control.RCS = false;
+            }
+        }
+        public static void NewLandingGuidance()
+        {
+            Atmospheric.CreateTargetedTrajectory(starship, InitPos);
+
+            starship.AutoPilot.Engage();
+            starship.AutoPilot.TargetRoll = 0;
+
+            while (starship.Thrust < 100)
+            {
+                Atmospheric.FoundIntersection(starship, InitPos);
+
+                double ZoneDistance = Distance(ImpactPoint().Item1, InitPos.Item1, ImpactPoint().Item2, InitPos.Item2);
+
+                double Pitch = ZoneDistance / 1000;
+                if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance > 500)
+                {
+                    Math.Round(Pitch *= 15);
+                }
+                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance <= 500 && ZoneDistance > 100)
+                {
+                    Math.Round(Pitch *= 5); //1
+                }
+
+                double Head = (360 - (ToDegree(Calculs.VectorAngleWithNegative(Atmospheric.targetedTrajectory) - (Math.PI / 2)))) - 98;
+                Console.WriteLine("Base Heading : " + Head);
+                Console.WriteLine("Distance for Angle : " + Distance(Atmospheric.intersection.Y, starship.Flight(starship.SurfaceReferenceFrame).Latitude, Atmospheric.intersection.X, starship.Flight(starship.SurfaceReferenceFrame).Longitude));
+                double angle = Calculs.Clamp(Distance(Atmospheric.intersection.Y, starship.Flight(starship.SurfaceReferenceFrame).Latitude, Atmospheric.intersection.X, starship.Flight(starship.SurfaceReferenceFrame).Longitude) / 10000000, 0, 20);
+                if (Atmospheric.teta < Math.PI / 2 && Atmospheric.teta > 0)
+                {
+                    Pitch = -Pitch;
+                    Head -= angle;
+                }
+                else if (Atmospheric.teta > -(Math.PI / 2) && Atmospheric.teta < 0)
+                {
+                    Pitch = -Pitch;
+                    Head += angle;
+                }
+                else if (Atmospheric.teta < Math.PI / 2 && Atmospheric.teta > 0)
+                {
+                    Head += angle;
+                }
+                else if (Atmospheric.teta > -(Math.PI / 2) && Atmospheric.teta < 0)
+                {
+                    Head -= angle;
+                }
+
+                if (Pitch > 15)
+                    Pitch = 15;
+                else if (Pitch < -15)
+                    Pitch = -15;
+
+                HeadingTarget = Head;
+                PitchTarget = Pitch;
+                starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
+                Console.WriteLine("Head target : " + HeadingTarget);
+                Console.WriteLine("Pitch Target : " + PitchTarget);
+                Console.WriteLine("Angle : " + angle);
+
+                if ((starship.AutoPilot.HeadingError > 2 || starship.AutoPilot.PitchError > 1) && starship.AutoPilot.RollError < 90 && starship.Flight(starship.SurfaceReferenceFrame).Pitch < 20 && starship.Flight(starship.SurfaceReferenceFrame).Pitch > -20)
+                    starship.Control.RCS = true;
+                else
+                    starship.Control.RCS = false;
+            }
         }
 
         public static void LandingGuidance()
@@ -553,30 +836,30 @@ namespace StarshipComputer
             Console.WriteLine("Gravity Center : " + starship.Flight(starship.SurfaceReferenceFrame).CenterOfMass);
 
             double Tosc = 3.55f; //9.27f
-            /*PIDLoop PitchPid = new PIDLoop(0.01, 0, 0, 0, 25);
+            PIDLoop PitchPid = new PIDLoop(0.01, 0, 0, 0, 25);
             PitchPid.Ki = 2 * PitchPid.Kp / Tosc;
-            PitchPid.Kd = 2 * Tosc;*/
+            PitchPid.Kd = 2 * Tosc;
 
             /*starship.Control.SAS = false;
             starship.AutoPilot.Engage();
             starship.AutoPilot.AutoTune = false;
 
-            starship.AutoPilot.TargetPitchAndHeading(88, 0);
+            starship.AutoPilot.TargetPitchAndHeading(88, 0);*/
 
-            while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed < 40) 
+           /* while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed < 40) 
             {
                 starship.Control.Throttle = Throttle.ThrottleToTWR(starship, 1.2f, 3);
                 starship.AutoPilot.TargetPitchAndHeading(88, 0);
             }
 
-            starship.AutoPilot.AutoTune = true;
+            starship.AutoPilot.AutoTune = true;*/
 
             double a = 0;
 
-            Thread EngineCutoff = new Thread(EngineCutoffAscent);
-            EngineCutoff.Start();
+            /*Thread EngineCutoff = new Thread(EngineCutoffAscent);
+            EngineCutoff.Start();*/
 
-            while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 10)
+            /*while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 10)
             {
                 a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*///;
                 /*a = Calculs.Mod((a + 180), 360) - 180;*/
@@ -609,68 +892,94 @@ namespace StarshipComputer
                     starship.AutoPilot.TargetRoll = 0;
                     //Console.WriteLine(HeadingTarget);
                 }
-            }
+            }*/
 
-            starship.AutoPilot.TargetPitchAndHeading(0, (float)HeadingTarget);
+            /*starship.AutoPilot.TargetPitchAndHeading(0, (float)HeadingTarget);
             starship.AutoPilot.TargetRoll = 0;
             starship.Control.Pitch = -1;
-            while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 0) { starship.Control.Pitch = -1; }
+            while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 0) { starship.Control.Pitch = -1; }*/
                 
                 
             starship.Control.Throttle = 0;
-            Thread.Sleep(2000);
+            //Thread.Sleep(2000);
             starship.Control.Pitch = 0;
 
             while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > -30) { }
 
-            //starship.AutoPilot.Disengage();
+            starship.AutoPilot.Engage();
 
             double mode = 1;
 
+            ImpactLat = ImpactPoint().Item1;
+            ImpactLon = ImpactPoint().Item2;
+
+            double ZoneDistance = Distance(ImpactLat, InitPos.Item1, ImpactLon, InitPos.Item2);
+
+            //PitchPid.Update(starship.connection.SpaceCenter().UT, 0 - ZoneDistance / 1000);
+
             a = 0;
+
+            if (ZoneDistance > 10 && mode == 1)
+            {
+                a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*/;
+            }
+            else
+                a = starship.Flight(starship.SurfaceReferenceFrame).Heading;
+            a = Calculs.Mod((a + 180), 360) - 180;
+
+            HeadingTarget = Math.Round(a);
 
             while (starship.Thrust < 5000)
             {
                 ImpactLat = ImpactPoint().Item1;
                 ImpactLon = ImpactPoint().Item2;
 
-                double ZoneDistance = Distance(ImpactLat, InitPos.Item1, ImpactLon, InitPos.Item2);
+                ZoneDistance = Distance(ImpactLat, InitPos.Item1, ImpactLon, InitPos.Item2);
 
                 //PitchPid.Update(starship.connection.SpaceCenter().UT, 0 - ZoneDistance / 1000);
 
-                if (Distance(InitPos.Item1, ImpactPoint().Item1, InitPos.Item2, ImpactPoint().Item2) > 50 && mode == 1)
+                if (ZoneDistance > 10 && mode == 1)
                 {
-                    a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*///;
-                /*}
-                /*else
+                    a = TargetedHeading()/* - starship.Flight(starship.SurfaceReferenceFrame).Heading*/;
+                }
+                else
                     a = starship.Flight(starship.SurfaceReferenceFrame).Heading;
-                /*a = Calculs.Mod((a + 180), 360) - 180;*/
+                a = Calculs.Mod((a + 180), 360) - 180;
 
-                /*double Pitch = ZoneDistance / 1000;
+                double Pitch = ZoneDistance / 1000;
                 if ((ZoneDistance < 500 && ZoneDistance > 20 && mode == 2)) //<
                 {
-                    Math.Round(Pitch *= 60);
+                    Math.Round(Pitch *= 45 * starship.Flight(starship.SurfaceReferenceFrame).HorizontalSpeed / 10); //60
                     //Pitch += 5;
                 }
                 else if (mode == 2)
                 {
-                    Math.Round(Pitch *= 120);
+                    Math.Round(Pitch *= 60 * (starship.Flight(starship.SurfaceReferenceFrame).HorizontalSpeed / 10) * 2);
                 }
-                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 75 && ZoneDistance > 500)
+                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance > 500 && mode == 1)
                 {
-                    Math.Round(Pitch *= 35);
+                    Math.Round(Pitch *= 15);
                 }
-                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 75 && ZoneDistance <= 500)
+                else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance <= 500 && ZoneDistance > 100 && mode == 1)
                 {
-                    Math.Round(Pitch *= 10);
+                    Math.Round(Pitch *= 5); //1
                 }
-                else
-                    Pitch = 0;
+                /*else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 40 && ZoneDistance <= 100 && mode == 1)
+                {
+                    Math.Round(Pitch *= 10); //1
+                    Pitch -= Pitch;
+                }*/
+                else if (mode == 1)
+                    Pitch = -3.5;
 
-                if (Pitch > 15 && mode == 1)
-                    Pitch = 15;
-                else if (Pitch > 45 && mode == 2)
-                    Pitch = 45;
+                if (Pitch > 10 && mode == 1)
+                    Pitch = 10;
+                else if (Pitch < -10 && mode == 1)
+                    Pitch = -10;
+                else if (Pitch > 35 && mode == 2)
+                    Pitch = 35;
+                else if (Pitch < -35 && mode == 2)
+                    Pitch = -35;
 
                 Vector2 ShipZone = new Vector2((float)(InitPos.Item1 - starship.Flight(starship.SurfaceReferenceFrame).Latitude), (float)(InitPos.Item2 - starship.Flight(starship.SurfaceReferenceFrame).Longitude));
                 Vector2 ShipImpact = new Vector2((float)(ImpactLat - starship.Flight(starship.SurfaceReferenceFrame).Latitude), (float)(ImpactLon - starship.Flight(starship.SurfaceReferenceFrame).Longitude));
@@ -687,18 +996,19 @@ namespace StarshipComputer
                 }
                 else
                 {
-                    PitchTarget = Pitch; //PitchPid.Output
+                    PitchTarget = Pitch * 10; //PitchPid.Output
                     Console.WriteLine("2");
 
                     mode = 2;
+                    //HeadingTarget = Math.Round(a);
 
                     /*if (HeadingTarget > 180)
                         HeadingTarget = a - 180;
                     else
                         HeadingTarget = a + 180;*/
-                /*}
+                }
 
-                if ((starship.AutoPilot.HeadingError > 2 || starship.AutoPilot.PitchError > 1) && starship.AutoPilot.RollError < 90)
+                if ((starship.AutoPilot.HeadingError > 2 || starship.AutoPilot.PitchError > 1) && starship.AutoPilot.RollError < 90 && starship.Flight(starship.SurfaceReferenceFrame).Pitch < 20 && starship.Flight(starship.SurfaceReferenceFrame).Pitch > -20)
                     starship.Control.RCS = true;
                 else
                     starship.Control.RCS = false;
@@ -708,25 +1018,25 @@ namespace StarshipComputer
                 else if (HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading <= -30)
                     HeadingTarget = starship.Flight(starship.SurfaceReferenceFrame).Heading + 30;*/
 
-                /*starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
+                starship.AutoPilot.TargetPitchAndHeading((float)PitchTarget, (float)HeadingTarget);
                 starship.AutoPilot.TargetRoll = 0;
 
                 Console.WriteLine("After Correction : " + HeadingTarget);
                 Console.WriteLine("Pitch Target : " + PitchTarget);
             }
-        }*/
+        }
 
         public static void PIDcontrol()
         {
-            Part Hinge1 = Wings.WingUpR[0];
-            Part Hinge2 = Wings.WingUpL[0];
+            //Part Hinge1 = Wings.WingUpR[0];
+            /*Part Hinge2 = Wings.WingUpL[0];
             Part Hinge3 = Wings.WingDownR[0];
-            Part Hinge4 = Wings.WingDownL[0];
+            Part Hinge4 = Wings.WingDownL[0];*/
 
-            Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
-            Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            //Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            /*Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
             Module HingeDown1 = Hinge3.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
-            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");*/
 
             float Tosc = 9.64f;
             float ToscRoll = 7;
@@ -748,7 +1058,7 @@ namespace StarshipComputer
 
             while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > -10) { Thread.Sleep(1000); }
 
-            while (starship.Thrust < 1000000)
+            while (starship.Thrust < 10000)
             {
                 DateTime date1 = DateTime.Now;
 
@@ -762,10 +1072,10 @@ namespace StarshipComputer
                 //PidRoll.Setpoint = PidYaw.Output;
                 PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
 
-                HingeUp1.SetFieldFloat("Target Angle", (float)pidController.Output + (float)PidRoll.Output - (float)PidYaw.Output); //90-Le reste
-                HingeUp2.SetFieldFloat("Target Angle", (float)pidController.Output - (float)PidRoll.Output + (float)PidYaw.Output); //90-Le reste
+                //HingeUp1.SetFieldFloat("Target Angle", (float)pidController.Output + (float)PidRoll.Output - (float)PidYaw.Output); //90-Le reste
+                /*HingeUp2.SetFieldFloat("Target Angle", (float)pidController.Output - (float)PidRoll.Output + (float)PidYaw.Output); //90-Le reste
                 HingeDown1.SetFieldFloat("Target Angle", 90-(float)pidController.Output + (float)PidRoll.Output + (float)PidYaw.Output); //Rien de spécial
-                HingeDown2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output - (float)PidYaw.Output); //Rien de spécial
+                HingeDown2.SetFieldFloat("Target Angle", 90-(float)pidController.Output - (float)PidRoll.Output - (float)PidYaw.Output); //Rien de spécial*/
                 DateTime date2 = DateTime.Now;
 
                 deltaTime = date2 - date1;
@@ -773,10 +1083,10 @@ namespace StarshipComputer
 
             Console.WriteLine("Go To Vertical");
 
-            HingeUp1.SetFieldFloat("Target Angle", 0); //90
-            HingeUp2.SetFieldFloat("Target Angle", 0); //90
+            //HingeUp1.SetFieldFloat("Target Angle", 0); //90
+            /*HingeUp2.SetFieldFloat("Target Angle", 0); //90
             HingeDown1.SetFieldFloat("Target Angle", 80); //0
-            HingeDown2.SetFieldFloat("Target Angle", 80); //0
+            HingeDown2.SetFieldFloat("Target Angle", 80); //0*/
 
             starship.AutoPilot.Disengage();
             /*starship.AutoPilot.Engage();
@@ -805,76 +1115,128 @@ namespace StarshipComputer
             Console.WriteLine(starship.AutoPilot.TargetDirection);
 
             Console.WriteLine("Wings full opened");
-            HingeDown1.SetFieldFloat("Target Angle", 90); //90
-            HingeDown2.SetFieldFloat("Target Angle", 90); //90
+            /*HingeDown1.SetFieldFloat("Target Angle", 90); //90
+            HingeDown2.SetFieldFloat("Target Angle", 90); //90*/
         }
 
+
+        public static PIDLoop EngineRoll;
+        public static PIDLoop EngineYaw;
         public static void PIDcontrolNewStarship()
         {
-            Part Hinge1 = Wings.WingUpR[0];
-            Part Hinge2 = Wings.WingUpL[0];
+            starship.Control.Throttle = 0;
+
+            //Part Hinge1 = Wings.WingUpR[0];
+            /*Part Hinge2 = Wings.WingUpL[0];
             Part Hinge3 = Wings.WingDownR[0];
-            Part Hinge4 = Wings.WingDownL[0];
+            Part Hinge4 = Wings.WingDownL[0];*/
 
-            Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleControlSurface");
-            Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleControlSurface");
+            //Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleControlSurface");
+            /*Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleControlSurface");
             Module HingeDown1 = Hinge3.Modules.First(m => m.Name == "ModuleControlSurface");
-            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleControlSurface");
-            Hinge1.ControlSurface.Deployed = true;
-            Hinge2.ControlSurface.Deployed = true;
+            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleControlSurface");*/
+            //Hinge1.ControlSurface.Deployed = true;
+            /*Hinge2.ControlSurface.Deployed = true;
             Hinge3.ControlSurface.Deployed = true;
-            Hinge4.ControlSurface.Deployed = true;
+            Hinge4.ControlSurface.Deployed = true;*/
 
-            float Tosc = 3.5f;
-            float ToscRoll = 3.5f;
-            float ToscYaw = 2f; //3.55
-            pidController = new PIDLoop(2, 0, 0, 80, 0); //1ère valeur : Puissance
-            pidController.Ki = 8 * pidController.Kp / Tosc; //Anticipe
-            pidController.Kd = 2 * Tosc; //Amorti
+            while (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 25)
+            {
+                //HingeUp1.SetFieldFloat("Angle de déploiement", 0); //90-Le reste
+                /*HingeUp2.SetFieldFloat("Angle de déploiement", 0); //90-Le reste
 
-            PidRoll = new PIDLoop(2, 0, 0, 15, -15);
-            PidRoll.Ki = 2 * PidRoll.Kp / Tosc;
-            PidRoll.Kd = 2 * ToscRoll;
+                HingeDown1.SetFieldFloat("Angle de déploiement", 80); //Rien de spécial
+                HingeDown2.SetFieldFloat("Angle de déploiement", 80); //Rien de spécial*/
+            }
 
-            PidYaw = new PIDLoop(2, 0, 0, 25, -25);
-            PidYaw.Ki = 4 * PidYaw.Kp / ToscYaw;
-            PidYaw.Kd = 2 * ToscYaw;
+            float Tosc = 3f;
+            float ToscRoll = 3.5f; //3.5f
+            float ToscYaw = 3.5f; //3.55
+            pidController = new PIDLoop(4, 0, 0, 80, 0); //1ère valeur : Puissance //2
+            pidController.Ki = 8 * pidController.Kp / Tosc; //Anticipe //8
+            pidController.Kd = 2 * Tosc; //Amorti //2
 
-            Thread Recorder = new Thread(Record);
+            PidRoll = new PIDLoop(8, 0, 0, 15, -15); //15 -15
+            PidRoll.Ki = 16 * PidRoll.Kp / ToscRoll;
+            PidRoll.Kd = 8 * ToscRoll;
+
+            PidYaw = new PIDLoop(8, 0, 0, 25, -25); //25 -25
+            PidYaw.Ki = 16 * PidYaw.Kp / ToscYaw;
+            PidYaw.Kd = 8 * ToscYaw;
+
+            //Starship.starship.AutoPilot.RollPIDGains = new Tuple<double, double, double>(10, 10, 0);
+
+            Thread Recorder = new Thread(Starship.Record);
             Recorder.Start();
 
             while (starship.Flight(starship.Orbit.Body.ReferenceFrame).VerticalSpeed > -10) { Thread.Sleep(1000); }
 
             starship.Control.Throttle = 0;
 
+            while (starship.Thrust > 2) { starship.Control.Throttle = 0; }
+
             double a = 0;
+
+            while (starship.Flight(starship.SurfaceReferenceFrame).Pitch > 85)
+            {
+                //HingeUp1.SetFieldFloat("Angle de déploiement", 0); //90-Le reste
+                /*HingeUp2.SetFieldFloat("Angle de déploiement", 0); //90-Le reste
+
+                HingeDown1.SetFieldFloat("Angle de déploiement", 80); //Rien de spécial
+                HingeDown2.SetFieldFloat("Angle de déploiement", 80); //Rien de spécial*/
+            }
+
+            Thread Guidance = new Thread(NewLandingGuidanceLatitude); //LandingGuidance
+            Guidance.Start();
 
             while (starship.Thrust < 10000)
             {
                 DateTime date1 = DateTime.Now;
 
-                a = HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading;
+                a = HeadingTarget; //Test
+                //a = HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading;
                 a = Calculs.Mod((a + 180), 360) - 180; //((a + 180) % 360) - 180; //
                 //Console.WriteLine(HeadingTarget);
-                Console.WriteLine(a);
+
+                if (a < 0)
+                {
+                    a += 360;
+                }
+
+                Console.WriteLine("new Head : " + a);
+
+                if (a > 280)
+                {
+                    if (Math.Abs(a - starship.Flight(starship.SurfaceReferenceFrame).Heading) > 180)
+                    {
+                        a -= 360;
+                    }
+                }
+                else if (a < 90)
+                {
+                    if (Math.Abs(a - starship.Flight(starship.SurfaceReferenceFrame).Heading) > 180)
+                    {
+                        a += 360;
+                    }
+                }
 
                 pidController.Update(starship.connection.SpaceCenter().UT, (PitchTarget - starship.Flight(starship.SurfaceReferenceFrame).Pitch) * ((1 / starship.Flight().StaticPressure) * 100000));
-                PidYaw.Update(starship.connection.SpaceCenter().UT, a);
+                PidYaw.Update(starship.connection.SpaceCenter().UT, a - starship.Flight(starship.SurfaceReferenceFrame).Heading);
                 //PidRoll.Setpoint = PidYaw.Output;
                 PidRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
 
-                if (starship.Thrust > 10)
+                if (starship.Thrust > 100)
                 {
-                    HingeUp1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(10, 0, 80)); //90-Le reste
-                    HingeUp2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(10, 0, 80)); //90-Le reste
+                    //HingeUp1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(10, 0, 80)); //90-Le reste
+                    //HingeUp2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(10, 0, 80)); //90-Le reste
                 }
                 else
                 {
-                    HingeUp1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>((float)pidController.Output - (float)PidRoll.Output + (float)PidYaw.Output, 0, 80)); //90-Le reste
-                    HingeUp2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>((float)pidController.Output + (float)PidRoll.Output - (float)PidYaw.Output, 0, 80)); //90-Le reste
+                    //HingeUp1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>((float)pidController.Output - ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 80)); //90-Le reste
+                    //HingeUp2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>((float)pidController.Output + ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1f), 0, 80)); //90-Le reste
                 }
-                HingeDown1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(90 -(float)pidController.Output - (float)PidRoll.Output - (float)PidYaw.Output, 0, 80)); //Rien de spécial
-                HingeDown2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(90 -(float)pidController.Output + (float)PidRoll.Output + (float)PidYaw.Output, 0, 80)); //Rien de spécial
+                /*HingeDown1.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(90 -(float)pidController.Output - ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1), 0, 80)); //Rien de spécial
+                HingeDown2.SetFieldFloat("Angle de déploiement", Calculs.Clamp<float>(90 -(float)pidController.Output + ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 80)); //Rien de spécial*/
                 DateTime date2 = DateTime.Now;
 
                 deltaTime = date2 - date1;
@@ -886,10 +1248,10 @@ namespace StarshipComputer
 
             Console.WriteLine("Go To Vertical");
 
-            HingeUp1.SetFieldFloat("Angle de déploiement", 0); //90
-            HingeUp2.SetFieldFloat("Angle de déploiement", 0); //90
+            //HingeUp1.SetFieldFloat("Angle de déploiement", 0); //90
+            /*HingeUp2.SetFieldFloat("Angle de déploiement", 0); //90
             HingeDown1.SetFieldFloat("Angle de déploiement", 80); //0
-            HingeDown2.SetFieldFloat("Angle de déploiement", 80); //0
+            HingeDown2.SetFieldFloat("Angle de déploiement", 80); //0*/
 
             starship.AutoPilot.Disengage();
             /*starship.AutoPilot.Engage();
@@ -900,26 +1262,94 @@ namespace StarshipComputer
 
             starship.Control.Pitch = 1;
             while (starship.AutoPilot.PitchError > 45 || starship.AutoPilot.HeadingError > 90) { starship.Control.Pitch = 1; }*/
-            while (starship.Flight(starship.SurfaceReferenceFrame).Pitch < 45) { starship.Control.Pitch = 1; }
-            starship.Control.Pitch = 0;
+            /*while (starship.Flight(starship.SurfaceReferenceFrame).Pitch < 45) { starship.Control.Pitch = 1; }
+            starship.Control.Pitch = 0;*/
 
-            starship.AutoPilot.Disengage();
+            //starship.AutoPilot.Disengage();
             //starship.AutoPilot.Engage();
-            starship.AutoPilot.ReferenceFrame = starship.SurfaceVelocityReferenceFrame;
+            /*starship.AutoPilot.ReferenceFrame = starship.SurfaceReferenceFrame;
             starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(0, -3.14f, 0);
-            Console.WriteLine(starship.AutoPilot.TargetDirection);
-            starship.AutoPilot.AutoTune = true;
+            Console.WriteLine(starship.AutoPilot.TargetDirection);*/
 
-            while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 25)
+            float EngineToscRoll = 5;
+            EngineRoll = new PIDLoop(1, 0, 0, 1, -1);
+            EngineRoll.Ki = 0.1 * EngineRoll.Kp / EngineToscRoll;
+            EngineRoll.Kd = 0.1 * EngineToscRoll;
+            float EngineToscYaw = 8;
+            EngineYaw = new PIDLoop(1, 0, 0, 1, -1);
+            EngineYaw.Ki = 0.1 * EngineYaw.Kp / EngineToscYaw;
+            EngineYaw.Kd = 0.1 * EngineToscYaw;
 
-            Console.WriteLine("Wings full opened");
-            HingeUp1.SetFieldFloat("Angle de déploiement", 80); //90
-            HingeUp2.SetFieldFloat("Angle de déploiement", 80); //90
+            starship.Control.Pitch = 1;
+            Thread.Sleep(1000);
+            double initHead = starship.Flight(starship.SurfaceReferenceFrame).Heading;
 
-            while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 5)
+            if (HeadingTarget < 0)
             {
-                starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(0, -3.14f, 0);
-                Console.WriteLine(starship.AutoPilot.TargetDirection);
+                HeadingTarget += 360;
+            }
+            else if (HeadingTarget >= 360)
+            {
+                HeadingTarget -= 360;
+            }
+            while (/*initHead - starship.Flight(starship.SurfaceReferenceFrame).Heading > 90 || initHead - starship.Flight(starship.SurfaceReferenceFrame).Heading < -90*/ starship.Flight(starship.SurfaceReferenceFrame).Pitch < 50)
+            {
+                Console.WriteLine("Pitch = " + starship.Control.Pitch);
+                starship.Control.Pitch = 2 - (starship.Flight(starship.SurfaceReferenceFrame).Pitch / 90) / 2;
+                EngineRoll.Update(starship.connection.SpaceCenter().UT, 0 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
+                starship.Control.Roll = -(float)EngineRoll.Output;
+                EngineYaw.Update(starship.connection.SpaceCenter().UT, HeadingTarget - starship.Flight(starship.SurfaceReferenceFrame).Heading);
+                starship.Control.Yaw = -(float)EngineYaw.Output;
+            }
+            starship.Control.Pitch = -1;
+            Console.WriteLine("Decel Flip");
+            double prevRotation = starship.Rotation(starship.SurfaceVelocityReferenceFrame).Item2;
+            while (prevRotation > 0)
+            {
+                Console.WriteLine("Rotation : " + prevRotation);
+                prevRotation = starship.Rotation(starship.SurfaceVelocityReferenceFrame).Item2;
+                starship.Control.Pitch = -1;
+                EngineRoll.Update(starship.connection.SpaceCenter().UT, 180 - starship.Flight(starship.SurfaceReferenceFrame).Roll);
+                starship.Control.Roll = -(float)EngineRoll.Output;
+                //EngineYaw.Update(starship.connection.SpaceCenter().UT, (HeadingTarget + 180) - starship.Flight(starship.SurfaceReferenceFrame).Heading);
+                starship.Control.Yaw = 0;//(float)EngineYaw.Output;
+            }
+            //Thread.Sleep(1000);
+            starship.Control.Pitch = 0;
+            starship.Control.Yaw = 0;
+            starship.Control.Roll = 0;
+            //Thread.Sleep(1000);
+
+            starship.AutoPilot.Engage();
+            starship.AutoPilot.TargetPitchAndHeading(90, (float)HeadingTarget);
+            while (starship.AutoPilot.Error > 10) { }
+
+            starship.AutoPilot.Engage();
+            //starship.AutoPilot.AutoTune = true;
+
+            /*starship.AutoPilot.TargetPitchAndHeading(85, (float)Landing.ZoneHeading(starship));
+            starship.AutoPilot.TargetRoll = 90;*/
+
+            /*while (starship.AutoPilot.PitchError > 2)
+            {
+                starship.AutoPilot.TargetPitchAndHeading(88, (float)Landing.ZoneHeading(starship));
+            }*/
+
+            Thread guidance = new Thread(Tamere);
+            guidance.Start();
+
+            while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 25) { }
+
+            Console.WriteLine("Wings full closed");
+            //HingeUp1.SetFieldFloat("Angle de déploiement", 80); //90
+            //HingeUp2.SetFieldFloat("Angle de déploiement", 80); //90
+
+            //starship.AutoPilot.Disengage();
+
+            while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 15) //5
+            {
+                //starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(0, -3.14f, 0);
+                //Console.WriteLine(starship.AutoPilot.TargetDirection);
             }
 
             Console.WriteLine("Landing legs deployed");
@@ -930,26 +1360,30 @@ namespace StarshipComputer
             }*/
             starship.Control.Gear = true;
 
-            starship.AutoPilot.ReferenceFrame = starship.SurfaceReferenceFrame;
+            /*starship.AutoPilot.ReferenceFrame = starship.SurfaceReferenceFrame;
             starship.AutoPilot.TargetDirection = new Tuple<double, double, double>(3.14f, 0, 0);
-            Console.WriteLine(starship.AutoPilot.TargetDirection);
+            Console.WriteLine(starship.AutoPilot.TargetDirection);*/
+
+            while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 0.1) { }
+
+            Thread.Sleep(10000);
 
             Console.WriteLine("Wings full opened");
-            HingeUp1.SetFieldFloat("Angle de déploiement", 80); //90
-            HingeUp2.SetFieldFloat("Angle de déploiement", 80); //90
+            /*HingeDown1.SetFieldFloat("Angle de déploiement", 10); //90
+            HingeDown2.SetFieldFloat("Angle de déploiement", 10); //90*/
         }
 
         public static void WingControl()
         {
-            Part Hinge1 = Wings.WingUpR[0];
-            Part Hinge2 = Wings.WingUpL[0];
+            //Part Hinge1 = Wings.WingUpR[0];
+            /*Part Hinge2 = Wings.WingUpL[0];
             Part Hinge3 = Wings.WingDownR[0];
-            Part Hinge4 = Wings.WingDownL[0];
+            Part Hinge4 = Wings.WingDownL[0];*/
 
-            Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
-            Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            //Module HingeUp1 = Hinge1.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            /*Module HingeUp2 = Hinge2.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
             Module HingeDown1 = Hinge3.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
-            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");
+            Module HingeDown2 = Hinge4.Modules.First(m => m.Name == "ModuleRoboticServoHinge");*/
 
             CenterMass = starship.Flight(starship.SurfaceReferenceFrame).CenterOfMass;
 
@@ -1015,18 +1449,18 @@ namespace StarshipComputer
                 Console.WriteLine("AngularVelocity : " + angvel_corrected);
 
                 Console.WriteLine(pitchUp);
-                HingeUp1.SetFieldFloat("Target Angle", pitchUp);
-                HingeUp2.SetFieldFloat("Target Angle", pitchUp);
+                //HingeUp1.SetFieldFloat("Target Angle", pitchUp);
+                /*HingeUp2.SetFieldFloat("Target Angle", pitchUp);
                 HingeDown1.SetFieldFloat("Target Angle", pitchDown);
-                HingeDown2.SetFieldFloat("Target Angle", pitchDown);
+                HingeDown2.SetFieldFloat("Target Angle", pitchDown);*/
             }
 
             Console.WriteLine("Go To Vertical");
 
-            HingeUp1.SetFieldFloat("Target Angle", 90);
-            HingeUp2.SetFieldFloat("Target Angle", 90);
+            //HingeUp1.SetFieldFloat("Target Angle", 90);
+            /*HingeUp2.SetFieldFloat("Target Angle", 90);
             HingeDown1.SetFieldFloat("Target Angle", 0);
-            HingeDown2.SetFieldFloat("Target Angle", 0);
+            HingeDown2.SetFieldFloat("Target Angle", 0);*/
 
             starship.AutoPilot.Engage();
             starship.AutoPilot.ReferenceFrame = starship.SurfaceVelocityReferenceFrame;
@@ -1035,8 +1469,16 @@ namespace StarshipComputer
             starship.AutoPilot.AutoTune = true;
 
             starship.Control.Pitch = 1;
-            while (starship.AutoPilot.PitchError > 20 || starship.AutoPilot.HeadingError > 180) { }
-            starship.Control.Pitch = 0;
+            Thread.Sleep(1000);
+            double prevPitch = starship.Control.Pitch;
+            while (prevPitch < starship.Control.Pitch) { starship.Control.Pitch = 1/*(starship.Flight(starship.SurfaceReferenceFrame).Pitch * 2 - 90)*/; }
+            starship.Control.Pitch = -1;
+            Console.WriteLine("Decel Flip");
+            double prevRotation = starship.Rotation(starship.SurfaceVelocityReferenceFrame).Item2;
+            while (prevRotation > starship.Rotation(starship.SurfaceReferenceFrame).Item2) { starship.Control.Pitch = -1; }
+
+            Thread guidance = new Thread(Tamere);
+            guidance.Start();
 
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 20) { }
 
@@ -1052,8 +1494,13 @@ namespace StarshipComputer
             Console.WriteLine(starship.AutoPilot.TargetDirection);
 
             Console.WriteLine("Wings full opened");
-            HingeDown1.SetFieldFloat("Target Angle", 90);
-            HingeDown2.SetFieldFloat("Target Angle", 90);
+            /*HingeDown1.SetFieldFloat("Target Angle", 90);
+            HingeDown2.SetFieldFloat("Target Angle", 90);*/
+        }
+
+        public static void Tamere()
+        {
+            Landing.EngineGuidanceKOS(starship, InitPos);
         }
 
         public static bool DesentControl()
@@ -1073,7 +1520,7 @@ namespace StarshipComputer
             
 
             Console.WriteLine("Landing control started");
-            //Landing.LandingBurn(starship);
+            Landing.LandingBurn(starship);
 
             return true;
         }
@@ -1088,11 +1535,11 @@ namespace StarshipComputer
 
         public static bool TakeAllWingsModules()
         {
-            foreach (var Modules in Wings.WingUpR[0].Modules)
+            /*foreach (var Modules in Wings.WingUpR[0].Modules)
             {
                 Console.WriteLine(Modules.Name);
-            }
-            foreach (var Modules in Wings.WingUpL[0].Modules)
+            }*/
+            /*foreach (var Modules in Wings.WingUpL[0].Modules)
             {
                 Console.WriteLine(Modules.Name);
             }
@@ -1103,7 +1550,7 @@ namespace StarshipComputer
             foreach (var Modules in Wings.WingDownL[0].Modules)
             {
                 Console.WriteLine(Modules.Name);
-            }
+            }*/
 
             return true;
         }
@@ -1111,19 +1558,39 @@ namespace StarshipComputer
         public static bool TakeFieldOfModule()
         {
             Module module = null;
-            foreach (var modules in Wings.WingUpR[0].Modules)
+            /*foreach (var modules in Wings.WingUpR[0].Modules)
             {
                 if (modules.Name.Equals("ModuleControlSurface"))
                 {
                     module = modules;
                     Console.WriteLine("Change module valor");
                 }
-            }
+            }*/
 
             foreach (var Field in module.Fields)
             {
                 Console.WriteLine(Field);
             }
+
+            return true;
+        }
+
+        public static bool HopAtmospheric()
+        {
+            TakeCoords();
+            Console.WriteLine("Coords taked !");
+
+            Hop.Atmospheric();
+
+            return true;
+        }
+
+        public static bool SmallHop()
+        {
+            TakeCoords();
+            Console.WriteLine("Coords taked !");
+
+            Hop.Small();
 
             return true;
         }

@@ -28,21 +28,47 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.Speed_lb = new System.Windows.Forms.Label();
+            this.altitude_lb = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // Form1
+            // Speed_lb
+            // 
+            this.Speed_lb.AutoSize = true;
+            this.Speed_lb.Location = new System.Drawing.Point(13, 13);
+            this.Speed_lb.Name = "Speed_lb";
+            this.Speed_lb.Size = new System.Drawing.Size(94, 13);
+            this.Speed_lb.TabIndex = 0;
+            this.Speed_lb.Text = "Speed : NaNkm/h";
+            // 
+            // altitude_lb
+            // 
+            this.altitude_lb.AutoSize = true;
+            this.altitude_lb.Location = new System.Drawing.Point(12, 26);
+            this.altitude_lb.Name = "altitude_lb";
+            this.altitude_lb.Size = new System.Drawing.Size(81, 13);
+            this.altitude_lb.TabIndex = 1;
+            this.altitude_lb.Text = "Altitude : NaNm";
+            // 
+            // Telemetry
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Name = "Form1";
+            this.Controls.Add(this.altitude_lb);
+            this.Controls.Add(this.Speed_lb);
+            this.Name = "Telemetry";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
+
+        private System.Windows.Forms.Label Speed_lb;
+        private System.Windows.Forms.Label altitude_lb;
     }
 }
 

@@ -10,10 +10,10 @@ namespace StarshipComputer
 {
     public class Wings
     {
-        public static List<Part> WingUpR = new List<Part>();
-        public static List<Part> WingUpL = new List<Part>();
-        public static List<Part> WingDownR = new List<Part>();
-        public static List<Part> WingDownL = new List<Part>();
+        public static List<StarshipWing> WingUpR = new List<StarshipWing>();
+        public static List<StarshipWing> WingUpL = new List<StarshipWing>();
+        public static List<StarshipWing> WingDownR = new List<StarshipWing>();
+        public static List<StarshipWing> WingDownL = new List<StarshipWing>();
 
         public Wings(Vessel starship)
         {
@@ -23,13 +23,13 @@ namespace StarshipComputer
                 if (wing.Tag == "WingUpR")
                 {
                     WingNumber += 1;
-                    WingUpR.Add(wing);
+                    WingUpR.Add(new StarshipWing(wing));
                     Console.WriteLine("Add " + wing + " to Wing Up List.");
                 }
                 if (wing.Tag == "WingUpL")
                 {
                     WingNumber += 1;
-                    WingUpL.Add(wing);
+                    WingUpL.Add(new StarshipWing(wing));
                     Console.WriteLine("Add " + wing + " to Wing Up List.");
                 }
             }
@@ -41,13 +41,13 @@ namespace StarshipComputer
                 if (wing.Tag == "WingDownR")
                 {
                     WingNumber += 1;
-                    WingDownR.Add(wing);
+                    WingDownR.Add(new StarshipWing(wing));
                     Console.WriteLine("Add " + wing + " to Wing Down List.");
                 }
                 if (wing.Tag == "WingDownL")
                 {
                     WingNumber += 1;
-                    WingDownL.Add(wing);
+                    WingDownL.Add(new StarshipWing(wing));
                     Console.WriteLine("Add " + wing + " to Wing Down List.");
                 }
             }

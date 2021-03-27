@@ -104,7 +104,7 @@ namespace StarshipComputer
             }
         }*/
 
-        [RegisterCommand("wingControlLaunch", "Start Wings Control for the Starship descent", "use /wingControlLaunch")]
+        /*[RegisterCommand("wingControlLaunch", "Start Wings Control for the Starship descent", "use /wingControlLaunch")]
         public static bool WingWontrolLaunch(params string[] args)
         {
             if (Starship.WingWontrolLaunch())
@@ -115,12 +115,38 @@ namespace StarshipComputer
             {
                 return false;
             }
-        }
+        }*/
 
         [RegisterCommand("descentControl", "Start all of Starship's control to perform a descent", "use /descentControl")]
         public static bool DescentControl(params string[] args)
         {
             if (Starship.DesentControl())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("hop", "Start all of Starship's control to perform a hop", "use /hop")]
+        public static bool Hop(params string[] args)
+        {
+            if (Starship.HopAtmospheric())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("smallHop", "Start all of Starship's control to perform a small hop", "use /smallHop")]
+        public static bool SmallHop(params string[] args)
+        {
+            if (Starship.SmallHop())
             {
                 return true;
             }
@@ -173,6 +199,32 @@ namespace StarshipComputer
         public static bool TakeWingsModules(params string[] args)
         {
             if (Starship.TakeAllWingsModules())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("launch", "Launch Starship/SuperHeavy", "use /launch")]
+        public static bool Launch(params string[] args)
+        {
+            if (Starship.Launch())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [RegisterCommand("testTruc", "test a fonction", "use /testTruc")]
+        public static bool TestTruc(params string[] args)
+        {
+            if (Atmospheric.bidule())
             {
                 return true;
             }

@@ -66,9 +66,6 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="TrajectoriesBootstrap">
-      <HintPath>C:\Users\Aureb\KSP\Kerbal Space Program\GameData\Trajectories\Plugin\TrajectoriesBootstrap.dll</HintPath>
-    </Reference>
     <Reference Include="TrajectorieskRPC, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\Debug\TrajectorieskRPC.dll</HintPath>
@@ -82,8 +79,14 @@
     <Compile Include="ConnectionList.cs" />
     <Compile Include="Connections.cs" />
     <Compile Include="Interfaces\IEngine.cs" />
+    <Compile Include="Interfaces\IWing.cs" />
     <Compile Include="Starship\Engines.cs" />
     <Compile Include="Starship\Engines\Raptor.cs" />
+    <Compile Include="Starship\Flight\Hop.cs" />
+    <Compile Include="Starship\Guidance\Atmospheric.cs" />
+    <Compile Include="Starship\Startup.cs" />
+    <Compile Include="Starship\Wings\StarshipWing.cs" />
+    <Compile Include="SuperHeavy\SuperHeavy.cs" />
     <Compile Include="Telemetry.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -96,6 +99,7 @@
     <Compile Include="Starship\Starship.cs" />
     <Compile Include="Starship\Tank.cs" />
     <Compile Include="Starship\Wing.cs" />
+    <Compile Include="Timer.cs" />
     <Compile Include="Tools\Calculs.cs" />
     <Compile Include="Tools\Landing.cs" />
     <Compile Include="Tools\PID\PidController.cs" />

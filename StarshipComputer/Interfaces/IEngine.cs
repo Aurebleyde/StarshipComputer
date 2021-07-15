@@ -8,6 +8,7 @@ namespace StarshipComputer
 {
     public interface IEngine
     {
+        bool Activated();
         void Activate();
         void Shutdown();
         void Move(int x, int y);

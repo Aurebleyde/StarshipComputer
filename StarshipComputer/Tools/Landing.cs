@@ -27,7 +27,7 @@ namespace StarshipComputer
             bool Engine3Cut = false;
             bool Engine2Cut = false;
 
-            int EngineNumber = 1;
+            int EngineNumber = 2;
 
             while (true)
             {
@@ -42,10 +42,10 @@ namespace StarshipComputer
                 double trueRadar = vessel.Flight(vessel.SurfaceReferenceFrame).SurfaceAltitude - landedAltitude;
                 double g = vessel.Orbit.Body.SurfaceGravity;
                 double maxDecelThree = ((Engines.RaptorSL[0].MaxThrust() * EngineNumber/*(Engines.RaptorSL.Count - 0)*/) / vessel.Mass) - g;
-                double stopDistThree = Math.Pow(Speed, 2) / (1.0 * maxDecelThree);
+                double stopDistThree = Math.Pow(Speed, 2) / (0.9 * maxDecelThree); //1.0 * maxdecel...
                 double impactTime = trueRadar / Speed;
 
-                if ((trueRadar - (Speed * 1.0f) <= stopDistThree * 1.5 || trueRadar < 1000) && SuicideBurnText == false)//1.0 | 1000
+                if ((trueRadar - (Speed * 1.0f) <= stopDistThree * 1.4 /*1.5*/ || trueRadar < 600) && SuicideBurnText == false)//1.0 | 1000
                 {
                     Console.WriteLine("Landing Burn startup");
                     SuicideBurnText = true;
@@ -53,35 +53,53 @@ namespace StarshipComputer
                     throt = 0.001f; //0.01f
                     vessel.Control.Throttle = throt;
 
-                    //Engines.RaptorSL[1].Activate();
+                    vessel.Parts.WithTag("Probe")[0].Modules.First(m => m.Name == "ModuleReactionWheel").SetFieldFloat("Autorité de la roue", 10);
+
+                    Engines.RaptorSL[1].Activate();
 
                     //while (Engines.RaptorSL[1].Thrust() < 1000) { }
-                    Thread.Sleep(1000);
+                    Thread.Sleep(200);
 
-                    //Engines.RaptorSL[0].Activate();
-                    //Engines.RaptorSL[2].Activate();
+                    Engines.RaptorSL[0].Activate();
+                    Engines.RaptorSL[2].Activate();
 
-                    throt = 0.3f; //0.01f
+                    if (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == true)
+                    {
+                        throt = 0.1f; //0.001f
+                    }
+                    else if ((Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == true) || (Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == false) || (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == false))
+                    {
+                        throt = 0.8f; //0.01f
+                    }
+                    else
+                    {
+                        throt = 0.3f;
+                    }
                     vessel.Control.Throttle = throt;
+
+                    vessel.Control.RCS = true;
 
                     while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 60) { } //45
                 }
 
-                /*if (Engines.RaptorSL[1].Thrust() > 30000 && Engines.RaptorSL[2].Thrust() > 30000 && Engine3Cut == false && (Speed < 20 || (vessel.Control.Throttle < 0.01 && Throttle.TWR(vessel) > 0.95f)))
+                if (Engines.RaptorSL[1].Thrust() > 30000 && Engines.RaptorSL[2].Thrust() > 30000 && Engine3Cut == false && (Speed < 30 || (vessel.Control.Throttle < 0.01 && Throttle.TWR(vessel) > 0.95f)))
                 {
+                    vessel.Parts.WithTag("Probe")[0].Modules.First(m => m.Name == "ModuleReactionWheel").SetFieldFloat("Autorité de la roue", 100);
                     Thread.Sleep(1000);
                     Engines.RaptorSL[0].Shutdown();
                     Engine3Cut = true;
                     EngineNumber = 2;
-                }*/
+                }
 
-                /*if (Engine3Cut == true && Engine2Cut == false && stopDistThree > trueRadar - (Speed * impactTime) && (Speed < 10 || (vessel.Control.Throttle < 0.01 && Throttle.TWR(vessel) > 0.95f)))
+                if (Engine3Cut == true && Engine2Cut == false && stopDistThree * 3 > trueRadar - (Speed * impactTime) && (Speed < 10 || (vessel.Control.Throttle < 0.01 && Throttle.TWR(vessel) > 0.95f)))
                 {
                     Engines.RaptorSL[2].Shutdown();
+                    vessel.Control.Throttle = vessel.Control.Throttle + (vessel.Control.Throttle / 1.5f);
                     Engine2Cut = true;
                     EngineNumber = 1;
                     Engines.RaptorSL[1].Trim(3, -4);
-                }*/
+                    vessel.Parts.WithTag("Probe")[0].Modules.First(m => m.Name == "ModuleReactionWheel").SetFieldFloat("Autorité de la roue", 50);
+                }
 
                 if (SuicideBurnText)
                     throt = (float)(stopDistThree / trueRadar);
@@ -97,6 +115,7 @@ namespace StarshipComputer
                 {
                     vessel.Control.Throttle = 0;
                     throt = 0;
+                    vessel.Parts.WithTag("Probe")[0].Modules.First(m => m.Name == "ModuleReactionWheel").SetFieldFloat("Autorité de la roue", 0);
                     Console.WriteLine("Landing burn shutdown");
                     Console.WriteLine("TrueRadar : " + trueRadar);
 
@@ -104,6 +123,8 @@ namespace StarshipComputer
                     {
                         engine.Shutdown();
                     }
+
+                    //Starship.cam.StopTracking();
 
                     Console.WriteLine("Distance to zone : " + Starship.Distance(vessel.Flight(vessel.SurfaceReferenceFrame).Latitude, Starship.InitPos.Item1, vessel.Flight(vessel.SurfaceReferenceFrame).Longitude, Starship.InitPos.Item2));
 
@@ -119,7 +140,7 @@ namespace StarshipComputer
 
                 if (throt <= 0.001f && SuicideBurnText == true)
                     throt = 0.001f;
-
+                Console.WriteLine("===================UPDATE THRUST==================");
                 vessel.Control.Throttle = throt;
             }
         }
@@ -143,11 +164,11 @@ namespace StarshipComputer
             //vessel.AutoPilot.AutoTune = false;
 
             vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 360, 45);
-            vessel.AutoPilot.StoppingTime = new Tuple<double, double, double>(3, 3, 3);
-            vessel.AutoPilot.DecelerationTime = new Tuple<double, double, double>(10, 10, 10);
-            vessel.AutoPilot.RollThreshold = 360;
+            vessel.AutoPilot.StoppingTime = new Tuple<double, double, double>(3, 3, 6);
+            vessel.AutoPilot.DecelerationTime = new Tuple<double, double, double>(10, 10, 30);
+            vessel.AutoPilot.RollThreshold = 0.1;
             vessel.AutoPilot.PitchPIDGains = new Tuple<double, double, double>(50, 50, 0);
-            vessel.AutoPilot.YawPIDGains = new Tuple<double, double, double>(0, 0, 0);
+            vessel.AutoPilot.YawPIDGains = new Tuple<double, double, double>(50, 50, 0);
             vessel.AutoPilot.RollPIDGains = new Tuple<double, double, double>(50, 50, 0);
             Console.WriteLine("Start of Engine Guidance 4");
             double ImpactLat = vessel.connection.Trajectories().ImpactPos().Item1;
@@ -171,10 +192,10 @@ namespace StarshipComputer
                         {
                             /*if (Starship.Distance(LZ.Item1, vessel.Flight(vessel.SurfaceReferenceFrame).Latitude, LZ.Item2, vessel.Flight(vessel.SurfaceReferenceFrame).Latitude) - 10 > Starship.Distance(ImpactLat, vessel.Flight(vessel.SurfaceReferenceFrame).Latitude, ImpactLon, vessel.Flight(vessel.SurfaceReferenceFrame).Latitude))
                             {*/
-                            vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 360, 45);
+                            vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 45, 15);
                             Console.WriteLine("1");
                             vessel.AutoPilot.TargetRoll = 180;
-                            Pitch = Calculs.Clamp<float>(90 - ((float)Starship.Distance(ImpactLat, LZ.Item1, ImpactLon, LZ.Item2) / 1f), 70, 90); // / 15
+                            Pitch = Calculs.Clamp<float>(90 - ((float)Starship.Distance(ImpactLat, LZ.Item1, ImpactLon, LZ.Item2) / 10f), 70, 90); // / 15
                             Head = (float)ZoneHeading(vessel);
                             /*}
                             else
@@ -191,15 +212,15 @@ namespace StarshipComputer
                         }
                         else
                         {
-                            vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 360, 90);
-                            vessel.AutoPilot.TargetRoll = 0;
+                            vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 180, 25);
+                            vessel.AutoPilot.TargetRoll = 180;
                             Pitch = 90 - (Math.Abs(90 - (float)RetrogradePitch(vessel))) / 0.5f;
                             Head = (float)RetrogradeHeading(vessel);
-                            vessel.AutoPilot.TargetPitchAndHeading(Pitch, Head);
+                            vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch, 80, 110), Head);
                             while ((vessel.AutoPilot.PitchError > 10 && vessel.AutoPilot.HeadingError > 25) || (vessel.AutoPilot.PitchError < -10 && vessel.AutoPilot.HeadingError < -25))
                             {
                                 Console.WriteLine("Retro");
-                                vessel.AutoPilot.TargetRoll = 0;
+                                vessel.AutoPilot.TargetRoll = 180;
                                 Pitch = 90 - (Math.Abs(90 - (float)RetrogradePitch(vessel))) / 0.5f;
                                 Head = (float)RetrogradeHeading(vessel);
                                 vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch - 18, 75, 115), Head);
@@ -213,20 +234,33 @@ namespace StarshipComputer
                             Console.WriteLine("Retro End");
                         }
 
-                        vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch - 18, 70, 115), Head);
+                        vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch - 18, 80, 110), Head);
                         Console.WriteLine("Error : " + vessel.AutoPilot.Error);
                         Console.WriteLine("Pitch Target = " + vessel.AutoPilot.TargetPitch);
                         Console.WriteLine("Pitch Head = " + vessel.AutoPilot.TargetHeading);
                         Console.WriteLine("Pitch Roll = " + vessel.AutoPilot.TargetRoll);
 
                         prevDistance = Starship.Distance(LZ.Item1, ImpactLat, LZ.Item2, ImpactLon);
+
+                        if (vessel.Flight(vessel.SurfaceReferenceFrame).TrueAirSpeed > 25)
+                        {
+                            Console.WriteLine("Wings full opened");
+                            Wings.WingUpR[0].Orientation(0); //90
+                            Wings.WingUpL[0].Orientation(0); //90
+                        }
+                        else
+                        {
+                            Console.WriteLine("Wings full closed");
+                            Wings.WingUpR[0].Orientation(80); //90
+                            Wings.WingUpL[0].Orientation(80); //90
+                        }
                     }
 
                     Console.WriteLine("Retro 2");
-                    vessel.AutoPilot.TargetRoll = 0;
+                    vessel.AutoPilot.TargetRoll = 180;
                     Pitch = 90 - (Math.Abs(90 - (float)RetrogradePitch(vessel))) / 0.5f;
                     Head = (float)RetrogradeHeading(vessel);
-                    vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch - 18, 75, 115), Head);
+                    vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch - 18, 65, 115), Head);
                     Console.WriteLine("Error : " + vessel.AutoPilot.Error);
                     Console.WriteLine("Pitch Target = " + vessel.AutoPilot.TargetPitch);
                     Console.WriteLine("Pitch Head = " + vessel.AutoPilot.TargetHeading);
@@ -239,12 +273,12 @@ namespace StarshipComputer
             {
                 while (vessel.Flight(vessel.Orbit.Body.ReferenceFrame).VerticalSpeed < -0.1)
                 {
-                    vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 360, 90);
+                    vessel.AutoPilot.AttenuationAngle = new Tuple<double, double, double>(0.01, 360, 25);
                     Console.WriteLine("Decel for TD");
-                    vessel.AutoPilot.TargetRoll = 0;
+                    vessel.AutoPilot.TargetRoll = 180;
                     Pitch = 90 - (90 - (float)RetrogradePitch(vessel)) / 2; //4
-                    Head = 90; // (float)RetrogradeHeading(vessel);
-                    vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch + 0, 80, 130), Head);
+                    Head = (float)RetrogradeHeading(vessel); //90
+                    vessel.AutoPilot.TargetPitchAndHeading(Calculs.Clamp(Pitch + 0, 85, 95), Head);
                     Console.WriteLine("Error : " + vessel.AutoPilot.Error);
                     Console.WriteLine("Pitch Target = " + vessel.AutoPilot.TargetPitch);
                     Console.WriteLine("Pitch Head = " + vessel.AutoPilot.TargetHeading);

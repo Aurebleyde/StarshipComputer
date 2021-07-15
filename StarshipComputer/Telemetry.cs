@@ -13,7 +13,7 @@ namespace StarshipComputer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Thread.Sleep(10000);
+            Thread.Sleep(1000);
 
             Thread update = new Thread(Update);
             update.Start();
@@ -26,6 +26,10 @@ namespace StarshipComputer
 
         private void Update()
         {
+            while (Starship.starship == null)
+            {
+            }
+
             while (true)
             {
                 this.InvokeAction(() =>

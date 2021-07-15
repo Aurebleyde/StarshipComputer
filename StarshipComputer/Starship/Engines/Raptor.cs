@@ -15,6 +15,10 @@ namespace StarshipComputer
             Console.WriteLine("Raptor crée");
             raptor = engine;
         }
+        public bool Activated()
+        {
+            return raptor.Active;
+        }
         public void Activate()
         {
             Module TrimX = raptor.Part.Modules.First(m => m.Name == "GimbalTrim");

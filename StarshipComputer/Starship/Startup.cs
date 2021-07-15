@@ -78,7 +78,7 @@ namespace StarshipComputer
                     TotalThrust += raptor.Thrust();
                 }
 
-                if (TotalThrust > (desiredThrust * 95) / 100)
+                if (TotalThrust > (desiredThrust * 95) / 100 && Throttle.MaxTWR(Starship.starship) > 1.05)
                 {
                     /*foreach (var ports in Starship.starship.Parts.a)
                     {

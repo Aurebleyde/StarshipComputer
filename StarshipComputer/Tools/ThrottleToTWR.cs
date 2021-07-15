@@ -28,5 +28,13 @@ namespace StarshipComputer
 
             return twr;
         }
+
+        public static float MaxTWR(Vessel vessel)
+        {
+            float Mass = vessel.Mass * vessel.Orbit.Body.SurfaceGravity;
+            float twr = vessel.MaxThrust / Mass;
+
+            return twr;
+        }
     }
 }

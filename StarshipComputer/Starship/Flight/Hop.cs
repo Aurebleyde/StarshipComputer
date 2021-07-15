@@ -27,9 +27,9 @@ namespace StarshipComputer
             Wings.WingDownL[0].Deployed();
             Wings.WingDownL[0].Orientation(80);
 
-            if (Startup.Igntion(3) == true)
+            if (Startup.Igntion(1) == true)
             {
-                Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 1.25f, 3);
+                Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 1.25f, 1);
                 Thread.Sleep(2500);
                 Starship.starship.AutoPilot.Engage();
                 Engines.RaptorSL[0].Trim(4, 0);
@@ -47,23 +47,22 @@ namespace StarshipComputer
 
                 while (Starship.starship.Orbit.ApoapsisAltitude - 97.6 < TargetAltitude - (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed * 1.6f))
                 {
-                    Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 1.15f, 3);
+                    Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 1.15f, 1);
                 }
                 Console.WriteLine("Apogee");
+                Thread LBC = new Thread(Starship.Tamere);
+                LBC.Start();
                 while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > -5)
                 {
                     if (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude - 20 < TargetAltitude - 5)
                     {
-                        Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 0.6f, 3);
+                        Starship.starship.Control.Throttle = Throttle.ThrottleToTWR(Starship.starship, 0.6f, 1);
                     }
                     else
                     {
                         Starship.starship.Control.Throttle = 0.001f;
                     }
                 }
-
-                Thread LBC = new Thread(Starship.Tamere);
-                LBC.Start();
 
                 Console.WriteLine("Max altitude : " + Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude + "m");
 
@@ -86,13 +85,17 @@ namespace StarshipComputer
             TargetAltitude = Double.Parse(Console.ReadLine());
             Console.WriteLine("Target Altitude set to " + TargetAltitude + "m");
 
+            Thread Events = new Thread(FlightEvent);
+            Events.Start();
+
+            //Thread.Sleep(999999999);
             if (Startup.Igntion(3) == true)
             {
                 Thread Enginess = new Thread(ThrottleGuidance);
                 Enginess.Start();
-                /*AscentGuidance();
+                AscentGuidance();
 
-                //Starship.starship.AutoPilot.Engage();
+                Starship.starship.AutoPilot.Engage();
                 Starship.starship.AutoPilot.TargetRoll = 0;
 
                 Enginess.Abort();
@@ -100,10 +103,10 @@ namespace StarshipComputer
                 Thread WingsControl = new Thread(Starship.PIDcontrolNewStarship);
                 WingsControl.Start();
 
-                Console.WriteLine("Landing control started");*/
+                Console.WriteLine("Landing control started");
                 Thread.Sleep(40000);
                 Confirmed = true;
-                Thread.Sleep(1000);
+                while (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude > 1200) { }
                 Thread LBC = new Thread(Starship.Tamere);
                 LBC.Start();
                 Console.WriteLine("Landing Burn control Started");
@@ -122,14 +125,14 @@ namespace StarshipComputer
         public static void ThrottleGuidance()
         {
             Thread engineControl = new Thread(EngineControl);
-            //engineControl.Start();
+            engineControl.Start();
 
             /*double Tosc = 0.5;
             PIDLoop ThrottlePID = new PIDLoop(0.01, 0, 0, 0.8, 1.1);
             ThrottlePID.Ki = 0.1 * ThrottlePID.Kp / Tosc;
             ThrottlePID.Kd = 0.01 * Tosc;*/
 
-            while (Starship.starship.Orbit.ApoapsisAltitude < TargetAltitude - 500 && Confirmed == false)
+            while (Starship.starship.Orbit.ApoapsisAltitude < TargetAltitude - 50 && Confirmed == false)
             {
                 double TargetSpeed = ActiveEngine * 25;
 
@@ -151,7 +154,7 @@ namespace StarshipComputer
                 }
             }
 
-            while ((Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 17/* || Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).Pitch > 70*/) && Confirmed == false)
+            while ((Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 16/* || Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).Pitch > 70*/) && Confirmed == false)
             {
                 /*ThrottlePID.MaxOutput = Throttle.ThrottleToTWR(Starship.starship, 1.1f, ActiveEngine);
                 ThrottlePID.Update(Starship.starship.connection.SpaceCenter().UT, TargetAltitude - Starship.starship.Orbit.ApoapsisAltitude);
@@ -183,27 +186,32 @@ namespace StarshipComputer
 
             while(Starship.starship.Control.Throttle != 0 && Confirmed == false)
             {
-                if (Engine2 == true && Starship.starship.Control.Throttle < 0.1)
+                if (Engine2 == true && Starship.starship.Control.Throttle < 0.15)
                 {
-                    Starship.starship.AutoPilot.TargetPitchAndHeading(91, 0);
+                    Starship.starship.AutoPilot.TargetPitchAndHeading(91, 45); //90
                     Engine2 = false;
                     Engines.RaptorSL[1].Shutdown();
                     ActiveEngine -= 1;
                     Thread.Sleep(2000);
                 }
-                if (Engine2 == false && Engine3 == true && Starship.starship.Control.Throttle < 0.15)
+                if (Engine2 == false && Engine3 == true && Starship.starship.Control.Throttle < 0.2)
                 {
                     Engine3 = false;
                     Engines.RaptorSL[2].Shutdown();
                     ActiveEngine -= 1;
-                    Starship.starship.AutoPilot.TargetPitchAndHeading(95, 90);
-                    //Starship.starship.AutoPilot.RollPIDGains = new Tuple<double, double, double>(2, 2, 0);
+                    Starship.starship.AutoPilot.TargetRoll = 0;
+                    //Starship.starship.AutoPilot.TargetPitchAndHeading(93, 90);
+                    Starship.starship.AutoPilot.RollPIDGains = new Tuple<double, double, double>(5, 5, 0);
+
+                    Starship.starship.Parts.WithTag("Probe")[0].Modules.First(m => m.Name == "ModuleReactionWheel").SetFieldFloat("Autorité de la roue", 10);
                 }
             }
 
             Engine1 = false;
             Engines.RaptorSL[0].Shutdown();
             ActiveEngine -= 1;
+
+            Confirmed = true;
         }
 
         public static void AscentGuidance()
@@ -213,25 +221,47 @@ namespace StarshipComputer
             Starship.starship.AutoPilot.AutoTune = false;
             //Starship.starship.AutoPilot.RollPIDGains = new Tuple<double, double, double>(0.5, 0.5, 0);
 
-            Starship.starship.AutoPilot.TargetPitchAndHeading(91, 90);
+            Starship.starship.AutoPilot.TargetPitchAndHeading(91, 53);
             Starship.starship.AutoPilot.TargetRoll = 0;
 
-            while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed < 40 && Confirmed == false) { }
+            while (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude < TargetAltitude - 1000 && Confirmed == false) { }
+            Starship.starship.AutoPilot.TargetPitchAndHeading(100, 45); //90
+
+            while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed < 20 && Confirmed == false) { }
 
             while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 20 && Confirmed == false)
             {
 
             }
 
+            Wings.WingDownL[0].Deployed();
+            Wings.WingDownR[0].Deployed();
+            Wings.WingDownL[0].Orientation(80);
+            Wings.WingDownR[0].Orientation(80);
             Starship.starship.AutoPilot.Disengage();
             Starship.starship.Control.Pitch = -1;
 
-            while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 0 && Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).Pitch > 70 && Confirmed == false)
+            Starship.starship.connection.SpaceCenter().PhysicsWarpFactor = 0;
+
+            while (Starship.starship.Flight(Starship.starship.Orbit.Body.ReferenceFrame).VerticalSpeed > 15 && Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).Pitch > 30 && Confirmed == false)
             {
                 Starship.starship.Control.Pitch = -1;
             }
 
             Starship.starship.Control.Pitch = 0;
+        }
+
+        public static void FlightEvent()
+        {
+            //Starship.cam.StartTracking();
+
+            while (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude < 1300) { Thread.Sleep(1000); }
+
+            //Starship.cam.StopTracking();
+
+            while (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude > 1300) { Thread.Sleep(1000); }
+
+            //Starship.cam.StartTracking();
         }
     }
 }

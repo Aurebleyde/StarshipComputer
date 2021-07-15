@@ -233,5 +233,14 @@ namespace StarshipComputer
                 return false;
             }
         }
+
+        [RegisterCommand("Cam", "Create a tracking camera", "use /Cam")]
+        public static bool Cam(params string[] args)
+        {
+            if (Starship.CreateCam())
+            { return true; }
+            else
+            { return false; }
+        }
     }
 }

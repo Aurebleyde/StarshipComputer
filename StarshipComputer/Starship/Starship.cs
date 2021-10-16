@@ -395,8 +395,9 @@ namespace StarshipComputer
         public static bool TakeCoords()
         {
             //InitPos = new Tuple<double, double>(starship.Flight(starship.SurfaceReferenceFrame).Latitude, starship.Flight(starship.SurfaceReferenceFrame).Longitude); //Liftoff Position
-            InitPos = new Tuple<double, double>(25.912118, -97.140131); //Landing Pad Boca Chica
+            //InitPos = new Tuple<double, double>(25.912118, -97.140131); //Landing Pad Boca Chica
             //InitPos = new Tuple<double, double>(28.471535, -80.527918); //LZ-1
+            InitPos = new Tuple<double, double>(28.494832274862347, -80.51891733604505); //LZ-2
 
             return true;
         }
@@ -976,12 +977,16 @@ namespace StarshipComputer
                 double Pitch = ZoneDistance / 1000;
                 if ((ZoneDistance < 500 && ZoneDistance > 20 && mode == 2)) //<
                 {
-                    Math.Round(Pitch *= 15 * starship.Flight(starship.SurfaceReferenceFrame).HorizontalSpeed / 10); //45 //60
+                    /*Math.Round(Pitch *= 1 * starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed / 10); //*15 //45 //60
+                    Pitch = Calculs.Clamp(Pitch, 0, 30);*/
                     //Pitch += 5;
+                    Pitch = Pitch;
                 }
                 else if (mode == 2)
                 {
-                    Math.Round(Pitch *= 60 * (starship.Flight(starship.SurfaceReferenceFrame).HorizontalSpeed / 10) * 2);
+                    /*Math.Round(Pitch *= 1 * (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed / 10) * 2); //*60
+                    Pitch = Calculs.Clamp(Pitch, 0, 30);*/
+                    Pitch = Pitch * 2;
                 }
                 else if (starship.Flight(starship.Orbit.Body.ReferenceFrame).HorizontalSpeed < 30 && ZoneDistance > 500 && mode == 1)
                 {
@@ -999,10 +1004,10 @@ namespace StarshipComputer
                 else if (mode == 1 && starship.Flight(starship.SurfaceReferenceFrame).SurfaceAltitude < 10000)
                     Pitch = -3.5;
 
-                if (Pitch > 10 && mode == 1)
-                    Pitch = 10;
-                else if (Pitch < -10 && mode == 1)
-                    Pitch = -10;
+                if (Pitch > 15 && mode == 1)
+                    Pitch = 15;
+                else if (Pitch < -15 && mode == 1)
+                    Pitch = -15;
                 else if (Pitch > 35 && mode == 2)
                     Pitch = 35;
                 else if (Pitch < -35 && mode == 2)
@@ -1179,8 +1184,8 @@ namespace StarshipComputer
                 Wings.WingUpR[0].Orientation(0); //90-Le reste
                 Wings.WingUpL[0].Orientation(0); //90-Le reste
 
-                Wings.WingDownR[0].Orientation(80); //Rien de spécial
-                Wings.WingDownL[0].Orientation(80); //Rien de spécial
+                Wings.WingDownR[0].Orientation(70); //Rien de spécial
+                Wings.WingDownL[0].Orientation(70); //Rien de spécial
             }
 
             float Tosc = 3f;
@@ -1291,11 +1296,11 @@ namespace StarshipComputer
                         Wings.WingUpL[0].Orientation(Calculs.Clamp<float>( 45 + ((float)PidRoll.Output / 1f), 0, 80)); //90-Le reste
                     }*/
 
-                    Wings.WingUpR[0].Orientation(Calculs.Clamp<float>(35 + ((float)pidController.Output * 2) - ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 80)); //90-Le reste
-                    Wings.WingUpL[0].Orientation(Calculs.Clamp<float>(35 + ((float)pidController.Output * 2) + ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1f), 0, 80)); //90-Le reste
+                    Wings.WingUpR[0].Orientation(Calculs.Clamp<float>(35 + ((float)pidController.Output * 1) - ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 70)); //90-Le reste
+                    Wings.WingUpL[0].Orientation(Calculs.Clamp<float>(35 + ((float)pidController.Output * 1) + ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1f), 0, 70)); //90-Le reste
                 }
-                Wings.WingDownR[0].Orientation(Calculs.Clamp<float>(70 - (float)pidController.Output - ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1), 0, 80)); //Rien de spécial
-                Wings.WingDownL[0].Orientation(Calculs.Clamp<float>(70 - (float)pidController.Output + ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 80)); //Rien de spécial
+                Wings.WingDownR[0].Orientation(Calculs.Clamp<float>(70 - (float)pidController.Output - ((float)PidRoll.Output / 1f) - ((float)PidYaw.Output / 1), 0, 70)); //Rien de spécial
+                Wings.WingDownL[0].Orientation(Calculs.Clamp<float>(70 - (float)pidController.Output + ((float)PidRoll.Output / 1f) + ((float)PidYaw.Output / 1), 0, 70)); //Rien de spécial
 
                 /*if (starship.AutoPilot.RollError < 5 && starship.AutoPilot.RollError > -5)
                 {
@@ -1418,8 +1423,8 @@ namespace StarshipComputer
             while (starship.Flight(starship.SurfaceReferenceFrame).TrueAirSpeed > 25) { }
 
             Console.WriteLine("Wings full closed");
-            Wings.WingUpR[0].Orientation(80); //90
-            Wings.WingUpL[0].Orientation(80); //90
+            Wings.WingUpR[0].Orientation(70); //90
+            Wings.WingUpL[0].Orientation(70); //90
 
             //starship.AutoPilot.Disengage();
 

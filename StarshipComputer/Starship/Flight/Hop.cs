@@ -253,7 +253,7 @@ namespace StarshipComputer
 
         public static void FlightEvent()
         {
-            //Starship.cam.StartTracking();
+           // Starship.cam.StartTracking();
 
             while (Starship.starship.Flight(Starship.starship.SurfaceReferenceFrame).SurfaceAltitude < 1300) { Thread.Sleep(1000); }
 

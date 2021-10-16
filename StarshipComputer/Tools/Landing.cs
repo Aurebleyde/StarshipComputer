@@ -34,6 +34,10 @@ namespace StarshipComputer
                 if (SuicideBurnText == false) { throt = Throttle.ThrottleToTWR(vessel, 0.0f, 1); }
 
                 double Speed = vessel.Flight(vessel.SurfaceReferenceFrame).TrueAirSpeed;
+                if (Speed > 30)
+                {
+                    Speed += 5;
+                }
                 if (Speed > 130) //130
                     Speed = 130;
 
@@ -63,23 +67,24 @@ namespace StarshipComputer
                     Engines.RaptorSL[0].Activate();
                     Engines.RaptorSL[2].Activate();
 
-                    if (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == true)
+                    while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 60)
                     {
-                        throt = 0.1f; //0.001f
-                    }
-                    else if ((Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == true) || (Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == false) || (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == false))
-                    {
-                        throt = 0.8f; //0.01f
-                    }
-                    else
-                    {
-                        throt = 0.3f;
-                    }
-                    vessel.Control.Throttle = throt;
+                        if (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == true)
+                        {
+                            throt = 0.1f; //0.001f
+                        }
+                        else if ((Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == true) || (Engines.RaptorSL[0].Activated() == false && Engines.RaptorSL[1].Activated() == true && Engines.RaptorSL[2].Activated() == false) || (Engines.RaptorSL[0].Activated() == true && Engines.RaptorSL[1].Activated() == false && Engines.RaptorSL[2].Activated() == false))
+                        {
+                            throt = 0.8f; //0.01f
+                        }
+                        else
+                        {
+                            throt = 0.3f;
+                        }
+                        vessel.Control.Throttle = throt;
 
-                    vessel.Control.RCS = true;
-
-                    while (vessel.Flight(vessel.SurfaceReferenceFrame).Pitch < 60) { } //45
+                        vessel.Control.RCS = true;
+                    } //45
                 }
 
                 if (Engines.RaptorSL[1].Thrust() > 30000 && Engines.RaptorSL[2].Thrust() > 30000 && Engine3Cut == false && (Speed < 30 || (vessel.Control.Throttle < 0.01 && Throttle.TWR(vessel) > 0.95f)))
@@ -106,8 +111,8 @@ namespace StarshipComputer
 
                 if (trueRadar < 100 && vSpeed > -3)
                     throt = Throttle.ThrottleToTWR(vessel, 0.9f, EngineNumber); //1.18
-                else if (trueRadar < 200 && vSpeed > -5)
-                    throt = Throttle.ThrottleToTWR(vessel, 1.3f, EngineNumber); //0.90
+                else if (trueRadar < 100 && vSpeed > -5)
+                    throt = Throttle.ThrottleToTWR(vessel, 2.0f, EngineNumber); //0.90
                 else if (vSpeed > 0)
                     throt = Throttle.ThrottleToTWR(vessel, 0.5f, EngineNumber); //0.90
 
